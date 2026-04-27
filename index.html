@@ -517,7 +517,7 @@ let unsubscribeSnapshot = null;
 
 // 관리자 모드
 let isAdminMode = false;
-const ADMIN_PIN = '5125'; // 관리자 PIN (나중에 변경 가능)
+const ADMIN_PIN = '5125'; // 관리자 PIN
 
 // ══════════════════════════════════════════════════════════════
 // 🔐 관리자 모드
@@ -1371,7 +1371,7 @@ function showDetail(id,e){
   // 버튼 구성 (승인 상태 + 관리자 권한에 따라)
   const footer = document.getElementById('dp-footer');
   if (ev.status === 'pending' && isAdminMode) {
-    // 승인 대기 + 관리자 → 승인/반려 버튼 표시
+    // 승인 대기 + 관리자 → 승인/반려/수정/삭제
     footer.innerHTML = `
       <button class="btn-approve" onclick="approveEvent('${id}')">승인</button>
       <button class="btn-reject" onclick="rejectEvent('${id}')">반려</button>
@@ -1379,17 +1379,22 @@ function showDetail(id,e){
       <button class="btn-del" onclick="deleteEvent()">삭제</button>
     `;
   } else if (ev.status === 'pending' && !isAdminMode) {
-    // 승인 대기 + 일반 사용자 → 수정/삭제만
+    // 승인 대기 + 일반 사용자 → 수정만
+    footer.innerHTML = `
+      <button class="btn-edit" onclick="editEvent()">수정</button>
+      <div style="font-size:10px;color:var(--tm);margin-top:8px;text-align:center;width:100%;">💡 승인/삭제는 관리자만 가능합니다</div>
+    `;
+  } else if (isAdminMode) {
+    // 승인 완료/반려됨 + 관리자 → 수정/삭제
     footer.innerHTML = `
       <button class="btn-edit" onclick="editEvent()">수정</button>
       <button class="btn-del" onclick="deleteEvent()">삭제</button>
-      <div style="font-size:10px;color:var(--tm);margin-top:8px;text-align:center;width:100%;">💡 승인은 관리자만 가능합니다</div>
     `;
   } else {
-    // 승인 완료/반려됨 → 수정/삭제만
+    // 승인 완료/반려됨 + 일반 사용자 → 수정만
     footer.innerHTML = `
       <button class="btn-edit" onclick="editEvent()">수정</button>
-      <button class="btn-del" onclick="deleteEvent()">삭제</button>
+      <div style="font-size:10px;color:var(--tm);margin-top:8px;text-align:center;width:100%;">💡 삭제는 관리자만 가능합니다</div>
     `;
   }
   
@@ -1406,6 +1411,13 @@ function showDetail(id,e){
 function closeDetail(){document.getElementById('detailPopup').classList.remove('open');}
 async function deleteEvent(){
   if(!selectedId)return;
+  
+  // 관리자 권한 체크
+  if (!isAdminMode) {
+    showToast('⚠️ 관리자만 삭제할 수 있습니다');
+    return;
+  }
+  
   const ev=events.find(e=>e.id===selectedId);
   if(!ev)return;
   
