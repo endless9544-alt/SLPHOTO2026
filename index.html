@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>배광시험실 예약 시스템 (Firestore)</title>
+<title>배광시험실 예약 시스템 (승인 기능)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
 :root{
@@ -125,12 +125,72 @@ table.gt th,table.gt td{border:1px solid var(--bl);text-align:center;vertical-al
 /* 토스트 */
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#323130;color:#fff;padding:9px 20px;border-radius:20px;font-size:12px;font-weight:500;z-index:500;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;}
 .toast.show{opacity:1;}
-/* 이벤트 블록 */
+
+/* 이벤트 블록 - 승인 상태별 스타일 */
 .ev-block{position:absolute;left:1px;right:1px;top:1px;border-radius:3px;border-left:3px solid;padding:3px 5px;font-size:9px;font-weight:600;overflow:hidden;cursor:grab;z-index:4;line-height:1.4;display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.12);}
 .ev-block:hover{filter:brightness(.88);}
+
+/* 승인 대기 상태 - 빗금 패턴 + 흐린 색상 */
+.ev-block.status-pending{
+  opacity:0.7;
+  position:relative;
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 4px,
+    rgba(255,255,255,0.3) 4px,
+    rgba(255,255,255,0.3) 8px
+  ) !important;
+}
+.ev-block.status-pending::after{
+  content:'⏳';
+  position:absolute;
+  top:2px;
+  right:3px;
+  font-size:10px;
+  opacity:0.8;
+}
+
+/* 승인 완료 상태 - 선명한 색상 */
+.ev-block.status-approved{
+  opacity:1;
+}
+.ev-block.status-approved::after{
+  content:'✓';
+  position:absolute;
+  top:2px;
+  right:3px;
+  font-size:10px;
+  font-weight:700;
+  color:rgba(0,0,0,0.2);
+}
+
+/* 반려됨 상태 - 회색 + 취소선 */
+.ev-block.status-rejected{
+  opacity:0.5;
+  filter:grayscale(0.7);
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 3px,
+    rgba(0,0,0,0.1) 3px,
+    rgba(0,0,0,0.1) 6px
+  ) !important;
+}
+.ev-block.status-rejected::after{
+  content:'✕';
+  position:absolute;
+  top:2px;
+  right:3px;
+  font-size:11px;
+  font-weight:700;
+  color:rgba(196,62,28,0.6);
+}
+
 .ev-t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .ev-s{font-size:8px;font-weight:400;opacity:.85;}
 .ev-d{font-size:8px;font-weight:400;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
 /* 배광실 구분 */
 .tr-room-sep td{border-top:3px solid var(--border)!important;height:0;padding:0;background:#dcdad8;}
 
@@ -156,7 +216,7 @@ table.gt th,table.gt td{border:1px solid var(--bl);text-align:center;vertical-al
 .slot-info{background:#f0f6ff;border:1px solid #b8d4f0;border-radius:4px;padding:6px 10px;font-size:11px;color:#004080;}
 
 /* DETAIL POPUP */
-.detail{display:none;position:fixed;background:#fff;border-radius:6px;box-shadow:0 4px 20px rgba(0,0,0,.2);width:260px;z-index:200;overflow:hidden;border-top:3px solid var(--accent);}
+.detail{display:none;position:fixed;background:#fff;border-radius:6px;box-shadow:0 4px 20px rgba(0,0,0,.2);width:280px;z-index:200;overflow:hidden;border-top:3px solid var(--accent);}
 .detail.open{display:block;}
 .dh{padding:9px 11px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #eee;}
 .dh-title{font-size:16px;font-weight:700;line-height:1.3;}
@@ -169,7 +229,37 @@ table.gt th,table.gt td{border:1px solid var(--bl);text-align:center;vertical-al
 .dr{display:flex;gap:6px;font-size:11px;}
 .di{width:14px;text-align:center;color:var(--tm);flex-shrink:0;}
 .dr-text{line-height:1.5;flex:1;}
+
+/* 승인 상태 배지 */
+.status-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:3px 8px;
+  border-radius:10px;
+  font-size:10px;
+  font-weight:600;
+  margin-top:4px;
+}
+.status-badge.pending{
+  background:#fff3cd;
+  color:#856404;
+}
+.status-badge.approved{
+  background:#d4edda;
+  color:#155724;
+}
+.status-badge.rejected{
+  background:#f8d7da;
+  color:#721c24;
+}
+
+/* 승인/반려 버튼 */
 .df{padding:7px 11px;border-top:1px solid #eee;display:flex;gap:6px;justify-content:flex-end;}
+.btn-approve{background:#107c10;color:#fff;border:none;padding:5px 14px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;}
+.btn-approve:hover{background:#0e6b0e;}
+.btn-reject{background:#c43e1c;color:#fff;border:none;padding:5px 14px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;}
+.btn-reject:hover{background:#a33518;}
 .btn-edit{background:var(--accent);color:#fff;border:none;padding:5px 14px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;}
 .btn-edit:hover{background:var(--ah);}
 .btn-del{background:none;border:1px solid #c43e1c;color:#c43e1c;padding:5px 14px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;}
@@ -214,6 +304,29 @@ table.gt th,table.gt td{border:1px solid var(--bl);text-align:center;vertical-al
       <div class="sb-ttl" id="mcLbl"></div>
       <div class="mc-grid" id="miniCal"></div>
     </div>
+    
+    <!-- 상태 필터 추가 -->
+    <div class="sb-sec">
+      <div class="sb-ttl">승인 상태</div>
+      <div class="f-list" id="statusFilterList">
+        <label class="f-row">
+          <input type="checkbox" checked onchange="toggleStatus('pending',this)">
+          <div class="f-dot" style="background:#ffc107"></div>
+          승인 대기
+        </label>
+        <label class="f-row">
+          <input type="checkbox" checked onchange="toggleStatus('approved',this)">
+          <div class="f-dot" style="background:#107c10"></div>
+          승인 완료
+        </label>
+        <label class="f-row">
+          <input type="checkbox" checked onchange="toggleStatus('rejected',this)">
+          <div class="f-dot" style="background:#c43e1c"></div>
+          반려됨
+        </label>
+      </div>
+    </div>
+    
     <div class="sb-sec">
       <div class="sb-ttl">배광실 표시</div>
       <div class="f-list" id="filterList"></div>
@@ -280,10 +393,7 @@ table.gt th,table.gt td{border:1px solid var(--bl);text-align:center;vertical-al
     </div>
   </div>
   <div class="db" id="dp-body"></div>
-  <div class="df">
-    <button class="btn-edit" onclick="editEvent()">수정</button>
-    <button class="btn-del" onclick="deleteEvent()">삭제</button>
-  </div>
+  <div class="df" id="dp-footer"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -326,7 +436,7 @@ window.firestoreDB = {
 
 console.log('✅ Firestore 초기화 완료');
 
-// 연결 상태 표시 (Firestore는 자동 연결이므로 바로 connected로 설정)
+// 연결 상태 표시
 setTimeout(() => {
   const statusEl = document.getElementById('syncStatus');
   const iconEl = document.getElementById('syncIcon');
@@ -367,6 +477,7 @@ const NIGHT_END_TO_RI={'21:00':0,'22:00':1,'23:00':2,'24:00':3,'02:00':4,'03:00'
 let currentMonday=getMonday(new Date());
 let events=[];
 let visibleRooms=new Set([1,2,3,4,5,6]);
+let visibleStatuses=new Set(['pending','approved','rejected']); // 상태 필터
 let selectedId=null,editingId=null;
 let isFirestoreReady = false;
 let unsubscribeSnapshot = null;
@@ -412,9 +523,11 @@ async function loadEventsFromFirestore() {
     
     events = [];
     snapshot.forEach((doc) => {
+      const data = doc.data();
       events.push({
         id: doc.id,
-        ...doc.data()
+        ...data,
+        status: data.status || 'pending' // 기본값 pending
       });
     });
     
@@ -459,7 +572,6 @@ async function updateEventInFirestore(event) {
     const { db, doc, updateDoc } = window.firestoreDB;
     const eventRef = doc(db, 'events', event.id);
     
-    // id 필드는 업데이트하지 않음
     const { id, ...updateData } = event;
     await updateDoc(eventRef, updateData);
     
@@ -499,9 +611,11 @@ function setupFirestoreListener() {
     
     events = [];
     snapshot.forEach((doc) => {
+      const data = doc.data();
       events.push({
         id: doc.id,
-        ...doc.data()
+        ...data,
+        status: data.status || 'pending'
       });
     });
     
@@ -518,17 +632,17 @@ function setupFirestoreListener() {
 async function seedEventsToFirestore() {
   const base = new Date(currentMonday);
   const sampleEvents = [
-    {room:1,dayOff:0,shift:'day',st:'08:00',et:'12:00',title:'LED 배광 측정',dept:'광학설계팀/김민준'},
-    {room:1,dayOff:0,shift:'night',st:'20:00',et:'23:00',title:'야간 Rework',dept:'품질팀/박정호'},
-    {room:2,dayOff:1,shift:'day',st:'09:00',et:'12:00',title:'프로젝터 광량',dept:'CAE팀/이수연'},
-    {room:2,dayOff:1,shift:'night',st:'20:00',et:'24:00',title:'야간 색도',dept:'광학설계팀/정미래'},
-    {room:3,dayOff:1,shift:'day',st:'10:00',et:'12:00',title:'Rework 재측정',dept:'품질팀/박정호'},
-    {room:4,dayOff:2,shift:'day',st:'08:00',et:'10:00',title:'긴급 평가',dept:'광학설계팀/이지훈'},
-    {room:5,dayOff:2,shift:'day',st:'13:00',et:'16:00',title:'색도 측정',dept:'광학설계팀/정미래'},
-    {room:6,dayOff:2,shift:'night',st:'20:00',et:'22:00',title:'헤드램프 야간',dept:'개발2팀/강태양'},
-    {room:3,dayOff:3,shift:'day',st:'13:00',et:'17:00',title:'신규 차종',dept:'개발3팀/한주원'},
-    {room:1,dayOff:4,shift:'day',st:'08:00',et:'12:00',title:'법규 적합',dept:'인증팀/오도현'},
-    {room:4,dayOff:4,shift:'day',st:'13:00',et:'17:00',title:'G65 Selective',dept:'광학설계팀/임채은'},
+    {room:1,dayOff:0,shift:'day',st:'08:00',et:'12:00',title:'LED 배광 측정',dept:'광학설계팀/김민준',status:'approved'},
+    {room:1,dayOff:0,shift:'night',st:'20:00',et:'23:00',title:'야간 Rework',dept:'품질팀/박정호',status:'pending'},
+    {room:2,dayOff:1,shift:'day',st:'09:00',et:'12:00',title:'프로젝터 광량',dept:'CAE팀/이수연',status:'approved'},
+    {room:2,dayOff:1,shift:'night',st:'20:00',et:'24:00',title:'야간 색도',dept:'광학설계팀/정미래',status:'pending'},
+    {room:3,dayOff:1,shift:'day',st:'10:00',et:'12:00',title:'Rework 재측정',dept:'품질팀/박정호',status:'approved'},
+    {room:4,dayOff:2,shift:'day',st:'08:00',et:'10:00',title:'긴급 평가',dept:'광학설계팀/이지훈',status:'pending'},
+    {room:5,dayOff:2,shift:'day',st:'13:00',et:'16:00',title:'색도 측정',dept:'광학설계팀/정미래',status:'approved'},
+    {room:6,dayOff:2,shift:'night',st:'20:00',et:'22:00',title:'헤드램프 야간',dept:'개발2팀/강태양',status:'pending'},
+    {room:3,dayOff:3,shift:'day',st:'13:00',et:'17:00',title:'신규 차종',dept:'개발3팀/한주원',status:'rejected'},
+    {room:1,dayOff:4,shift:'day',st:'08:00',et:'12:00',title:'법규 적합',dept:'인증팀/오도현',status:'approved'},
+    {room:4,dayOff:4,shift:'day',st:'13:00',et:'17:00',title:'G65 Selective',dept:'광학설계팀/임채은',status:'pending'},
   ];
   
   for (const ev of sampleEvents) {
@@ -543,7 +657,8 @@ async function seedEventsToFirestore() {
       title: ev.title,
       dept: ev.dept,
       date: fmtDate(d),
-      note: ''
+      note: '',
+      status: ev.status || 'pending'
     };
     await addEventToFirestore(newEvent);
   }
@@ -557,7 +672,51 @@ function generateId() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// 🎨 UI 함수들 (기존 코드)
+// 🎨 승인/반려 함수
+// ══════════════════════════════════════════════════════════════
+
+async function approveEvent(eventId) {
+  const ev = events.find(e => e.id === eventId);
+  if (!ev) return;
+  
+  saveUndo();
+  ev.status = 'approved';
+  await updateEventInFirestore(ev);
+  
+  buildTable();
+  renderStats();
+  closeDetail();
+  showToast(`✅ "${ev.title}" 승인됨`);
+}
+
+async function rejectEvent(eventId) {
+  const ev = events.find(e => e.id === eventId);
+  if (!ev) return;
+  
+  if (!confirm(`"${ev.title}" 예약을 반려하시겠습니까?`)) return;
+  
+  saveUndo();
+  ev.status = 'rejected';
+  await updateEventInFirestore(ev);
+  
+  buildTable();
+  renderStats();
+  closeDetail();
+  showToast(`⚠️ "${ev.title}" 반려됨`);
+}
+
+function toggleStatus(status, cb) {
+  if (cb.checked) {
+    visibleStatuses.add(status);
+  } else {
+    visibleStatuses.delete(status);
+  }
+  buildTable();
+  renderStats();
+}
+
+// ══════════════════════════════════════════════════════════════
+// 🎨 UI 함수들
 // ══════════════════════════════════════════════════════════════
 
 const UNDO_LIMIT=30;
@@ -595,11 +754,27 @@ function buildTable(){
   const tr2=document.createElement('tr');
   days.forEach(d=>{const isT=fmtDate(d)===todayStr;th=document.createElement('th');th.className='th-shift-day';th.textContent='주간';if(isT)th.style.background='#ffe8a0';tr2.appendChild(th);th=document.createElement('th');th.className='th-shift-night';th.textContent='야간';if(isT)th.style.background='#d4e4ff';tr2.appendChild(th);});
   thead.appendChild(tr2);
+  
   const visRooms=ROOMS.filter(r=>visibleRooms.has(r.id));const totalCols=3+days.length*2;
   visRooms.forEach((room,ri)=>{
     if(ri>0){const sep=document.createElement('tr');sep.className='tr-room-sep';const std=document.createElement('td');std.colSpan=totalCols;sep.appendChild(std);tbody.appendChild(sep);}
-    const wDates=days.map(d=>fmtDate(d));const cnt=events.filter(e=>e.room===room.id&&wDates.includes(e.date)).length;
-    const evMap={};events.filter(e=>e.room===room.id&&wDates.includes(e.date)).forEach(e=>{const key=`${e.date}-${e.shift}`;if(!evMap[key])evMap[key]=[];evMap[key].push(e);});
+    const wDates=days.map(d=>fmtDate(d));
+    
+    // 상태 필터 적용
+    const visibleEvents = events.filter(e => 
+      e.room === room.id && 
+      wDates.includes(e.date) && 
+      visibleStatuses.has(e.status || 'pending')
+    );
+    const cnt = visibleEvents.length;
+    
+    const evMap={};
+    visibleEvents.forEach(e=>{
+      const key=`${e.date}-${e.shift}`;
+      if(!evMap[key])evMap[key]=[];
+      evMap[key].push(e);
+    });
+    
     ROWS.forEach((rowDef,rowIdx)=>{
       const tr=document.createElement('tr');const isPM=rowIdx>=4;const isFirstPM=rowIdx===4;
       if(rowIdx===0){const td=document.createElement('td');td.rowSpan=8;td.className='td-room';td.style.cssText=`background:${room.bg};color:${room.color};border-top:2px solid ${room.color};`;td.innerHTML=`<span style="margin-right:3px">☑</span><b>${room.name}</b><br><span style="font-size:9px;font-weight:400;opacity:.7">${cnt}건</span>`;tr.appendChild(td);}
@@ -618,9 +793,15 @@ function buildTable(){
           if(startingEv){
             const{startRi:eStart,endRi:eEnd}=evToRi(startingEv);const span=eEnd-eStart+1;if(span>1)td.rowSpan=span;td.style.verticalAlign='top';
             const rowH=30;const crossesMidDay=(startingEv.shift==='day'&&eStart<=3&&eEnd>=4);const extraPx=crossesMidDay?1:0;
-            const block=document.createElement('div');block.className='ev-block';block.dataset.evid=startingEv.id;
+            const block=document.createElement('div');
+            
+            // 상태별 클래스 추가
+            const statusClass = `status-${startingEv.status || 'pending'}`;
+            block.className=`ev-block ${statusClass}`;
+            block.dataset.evid=startingEv.id;
             block.style.cssText=`background:${room.bg};color:${room.color};border-left-color:${room.color};height:${span*rowH+(span-1)+extraPx-2}px;`;
             block.innerHTML=`<div class="ev-t">${startingEv.title}</div><div class="ev-s">${startingEv.startTime}~${startingEv.endTime}</div><div class="ev-d">${startingEv.dept||''}</div>`;
+            
             const hTop=document.createElement('div');hTop.className='ev-resize-handle top';hTop.title='드래그로 시작 시간 조절';
             hTop.addEventListener('mousedown',e=>{e.stopPropagation();onResizeStart(e,startingEv.id,'top');});
             block.appendChild(hTop);
@@ -657,8 +838,14 @@ function onBlockDragMove(e){
   const offset=blockDrag.grabRi-blockDrag.origStartRi;const newStart=targetRi-offset;const newEnd=newStart+blockDrag.span-1;
   if(newStart<0||newEnd>7)return;
   blockDrag.currentTargetRi=newStart;blockDrag.currentTargetDate=targetDate;blockDrag.currentTargetShift=targetShift;blockDrag.moved=true;
-  const conflict=events.find(e2=>{if(e2.id===blockDrag.evId)return false;if(e2.room!==blockDrag.room||e2.date!==targetDate||e2.shift!==targetShift)return false;const{startRi:s,endRi:en}=evToRi(e2);return newStart<=en&&newEnd>=s;});
-  const cls=conflict?'drop-blocked':'drop-target';
+  const conflict=events.filter(e2=>{
+    if(e2.id===blockDrag.evId)return false;
+    if(!visibleStatuses.has(e2.status||'pending'))return false;
+    if(e2.room!==blockDrag.room||e2.date!==targetDate||e2.shift!==targetShift)return false;
+    const{startRi:s,endRi:en}=evToRi(e2);
+    return newStart<=en&&newEnd>=s;
+  });
+  const cls=conflict.length>0?'drop-blocked':'drop-target';
   for(let r=newStart;r<=newEnd;r++){document.querySelectorAll(`.td-slot[data-room="${blockDrag.room}"][data-date="${targetDate}"][data-shift="${targetShift}"][data-ri="${r}"]`).forEach(c=>c.classList.add(cls));}
 }
 async function onBlockDragEnd(e){
@@ -669,16 +856,19 @@ async function onBlockDragEnd(e){
   document.querySelectorAll(`.ev-block[data-evid="${evId}"]`).forEach(el=>el.classList.remove('block-dragging'));
   blockDrag=null;if(!moved)return;
   const newStart=currentTargetRi;const newEnd=newStart+span-1;const newShift=currentTargetShift||shift;
-  const conflict=events.find(e2=>{if(e2.id===evId)return false;if(e2.room!==room||e2.date!==currentTargetDate||e2.shift!==newShift)return false;const{startRi:s,endRi:en}=evToRi(e2);return newStart<=en&&newEnd>=s;});
-  if(conflict){showToast(`⚠️ 이동 불가 — 겹치는 예약 (${conflict.title})`);buildTable();return;}
+  const conflict=events.filter(e2=>{
+    if(e2.id===evId)return false;
+    if(!visibleStatuses.has(e2.status||'pending'))return false;
+    if(e2.room!==room||e2.date!==currentTargetDate||e2.shift!==newShift)return false;
+    const{startRi:s,endRi:en}=evToRi(e2);
+    return newStart<=en&&newEnd>=s;
+  });
+  if(conflict.length>0){showToast(`⚠️ 이동 불가 — 겹치는 예약 (${conflict[0].title})`);buildTable();return;}
   const ev=events.find(x=>x.id===evId);if(!ev)return;
   if(currentTargetDate===ev.date&&newShift===ev.shift&&newStart===origStartRi){buildTable();return;}
   saveUndo();const{startTime,endTime}=riToTimes(newShift,newStart,newEnd);
   ev.date=currentTargetDate;ev.shift=newShift;ev.startTime=startTime;ev.endTime=endTime;
-  
-  // 🔥 Firestore 업데이트
   await updateEventInFirestore(ev);
-  
   buildTable();renderStats();showToast(`✅ 이동됨 → ${currentTargetDate} ${newShift==='day'?'주간':'야간'} ${startTime}~${endTime}`);
 }
 
@@ -727,13 +917,14 @@ function onResizeMove(e){
     blockResize.currentStartRi=newStart; blockResize.currentEndRi=newEnd;
   }
 
-  const conflict=events.find(e2=>{
+  const conflict=events.filter(e2=>{
     if(e2.id===blockResize.evId)return false;
+    if(!visibleStatuses.has(e2.status||'pending'))return false;
     if(e2.room!==blockResize.room||e2.date!==blockResize.date||e2.shift!==blockResize.shift)return false;
     const{startRi:s,endRi:en}=evToRi(e2);
     return newStart<=en && newEnd>=s;
   });
-  const keepCls=conflict?'resize-blocked':'resize-target';
+  const keepCls=conflict.length>0?'resize-blocked':'resize-target';
 
   for(let r=newStart;r<=newEnd;r++){
     document.querySelectorAll(`.td-slot[data-room="${blockResize.room}"][data-date="${blockResize.date}"][data-shift="${blockResize.shift}"][data-ri="${r}"]`).forEach(c=>c.classList.add(keepCls));
@@ -759,27 +950,25 @@ async function onResizeEnd(e){
 
   if(currentStartRi===origStartRi && currentEndRi===origEndRi)return;
 
-  const conflict=events.find(e2=>{
+  const conflict=events.filter(e2=>{
     if(e2.id===evId)return false;
+    if(!visibleStatuses.has(e2.status||'pending'))return false;
     if(e2.room!==room||e2.date!==date||e2.shift!==shift)return false;
     const{startRi:s,endRi:en}=evToRi(e2);
     return currentStartRi<=en && currentEndRi>=s;
   });
-  if(conflict){showToast(`⚠️ 시간 조절 불가 — 겹치는 예약 (${conflict.title})`);buildTable();return;}
+  if(conflict.length>0){showToast(`⚠️ 시간 조절 불가 — 겹치는 예약 (${conflict[0].title})`);buildTable();return;}
 
   saveUndo();
   const ev=events.find(x=>x.id===evId);if(!ev)return;
   const{startTime,endTime}=riToTimes(shift,currentStartRi,currentEndRi);
   ev.startTime=startTime;ev.endTime=endTime;
-  
-  // 🔥 Firestore 업데이트
   await updateEventInFirestore(ev);
-  
   buildTable();renderStats();
   showToast(`✅ ${startTime}~${endTime} (${currentEndRi-currentStartRi+1}시간)으로 조절됨`);
 }
 
-// ── DRAG & CLICK (나머지 코드는 동일하므로 생략) ──
+// ── DRAG & CLICK ──
 let selection=null;
 function onMouseDown(e){
   if(e.button!==0)return;e.preventDefault();const td=e.currentTarget;
@@ -793,7 +982,15 @@ function onMouseEnter(e){
   if(parseInt(td.dataset.room)!==drag.room)return;if(td.dataset.date!==drag.date)return;if(td.dataset.shift!==drag.shift)return;
   const ri=parseInt(td.dataset.ri);if(ri===drag.startRi)return;if(ri<drag.startRi)return;
   let limitRi=ri;
-  for(let r=drag.startRi;r<=ri;r++){const booked=events.find(ev=>{if(ev.room!==drag.room||ev.date!==drag.date||ev.shift!==drag.shift)return false;const{startRi:s,endRi:en}=evToRi(ev);return r>=s&&r<=en;});if(booked){limitRi=r-1;break;}}
+  for(let r=drag.startRi;r<=ri;r++){
+    const booked=events.find(ev=>{
+      if(!visibleStatuses.has(ev.status||'pending'))return false;
+      if(ev.room!==drag.room||ev.date!==drag.date||ev.shift!==drag.shift)return false;
+      const{startRi:s,endRi:en}=evToRi(ev);
+      return r>=s&&r<=en;
+    });
+    if(booked){limitRi=r-1;break;}
+  }
   drag.endRi=Math.max(drag.startRi,limitRi);drag.moved=true;applyPreview();
 }
 function onMouseUp(e){
@@ -804,7 +1001,12 @@ function onMouseUp(e){
 }
 function confirmSelection(){
   const{room,date,shift,startRi,endRi}=drag;
-  const conflict=events.find(e=>{if(e.room!==room||e.date!==date||e.shift!==shift)return false;const{startRi:s,endRi:en}=evToRi(e);return startRi<=en&&endRi>=s;});
+  const conflict=events.find(e=>{
+    if(!visibleStatuses.has(e.status||'pending'))return false;
+    if(e.room!==room||e.date!==date||e.shift!==shift)return false;
+    const{startRi:s,endRi:en}=evToRi(e);
+    return startRi<=en&&endRi>=s;
+  });
   if(conflict){const r=ROOMS.find(r=>r.id===room);alert(`⚠️ ${r.name} ${shift==='day'?'주간':'야간'}에 겹치는 예약이 있습니다.\n(${conflict.title} ${conflict.startTime}~${conflict.endTime})`);clearDrag();return;}
   selection={room,date,shift,startRi,endRi};cursor={room,date,shift,ri:startRi};applySelection();applyCursor();
 }
@@ -877,7 +1079,7 @@ function renderStats(){
   const TOTAL_DAY=8*5,TOTAL_NIGHT=8*5;
   function evHours(ev){const sMap=ev.shift==='day'?DAY_START_TO_RI:NIGHT_START_TO_RI;const eMap=ev.shift==='day'?DAY_END_TO_RI:NIGHT_END_TO_RI;return(eMap[ev.endTime]??0)-(sMap[ev.startTime]??0)+1;}
   const html=ROOMS.filter(r=>visibleRooms.has(r.id)).map(r=>{
-    const evs=events.filter(e=>e.room===r.id&&wd.includes(e.date));
+    const evs=events.filter(e=>e.room===r.id&&wd.includes(e.date)&&visibleStatuses.has(e.status||'pending'));
     const usedDay=evs.filter(e=>e.shift==='day').reduce((s,e)=>s+evHours(e),0);
     const usedNight=evs.filter(e=>e.shift==='night').reduce((s,e)=>s+evHours(e),0);
     const remDay=Math.max(0,TOTAL_DAY-usedDay),remNight=Math.max(0,TOTAL_NIGHT-usedNight),remAll=remDay+remNight;
@@ -906,21 +1108,24 @@ async function submitReservation(){
   const title=document.getElementById('f_title').value.trim();const dept=document.getElementById('f_dept').value.trim();const room=parseInt(document.getElementById('f_room').value);const date=document.getElementById('f_date').value;const shift=document.getElementById('f_shift').value;const startTime=document.getElementById('f_start').value;const endTime=document.getElementById('f_end').value;const note=document.getElementById('f_note').value.trim();
   if(!title||!date){alert('필수 항목을 입력하세요.');return;}
   const sMap=shift==='day'?DAY_START_TO_RI:NIGHT_START_TO_RI;const eMap=shift==='day'?DAY_END_TO_RI:NIGHT_END_TO_RI;const newS=sMap[startTime]??0,newE=eMap[endTime]??0;
-  const conflict=events.find(e=>{if(e.id===editingId||e.room!==room||e.date!==date||e.shift!==shift)return false;const{startRi:s,endRi:en}=evToRi(e);return newS<=en&&newE>=s;});
-  if(conflict){alert(`⚠️ 시간이 겹치는 예약이 있습니다.\n(${conflict.title} ${conflict.startTime}~${conflict.endTime})`);return;}
+  const conflict=events.filter(e=>{
+    if(e.id===editingId||e.room!==room||e.date!==date||e.shift!==shift)return false;
+    if(!visibleStatuses.has(e.status||'pending'))return false;
+    const{startRi:s,endRi:en}=evToRi(e);
+    return newS<=en&&newE>=s;
+  });
+  if(conflict.length>0){alert(`⚠️ 시간이 겹치는 예약이 있습니다.\n(${conflict[0].title} ${conflict[0].startTime}~${conflict[0].endTime})`);return;}
   
   saveUndo();
   
   if(editingId){
-    // 수정
     const ev = events.find(e=>e.id===editingId);
     if(ev){
       ev.room=room;ev.shift=shift;ev.startTime=startTime;ev.endTime=endTime;ev.title=title;ev.dept=dept;ev.date=date;ev.note=note;
       await updateEventInFirestore(ev);
     }
   }else{
-    // 신규 추가
-    const newEvent = {id:generateId(),room,shift,startTime,endTime,title,dept,date,note};
+    const newEvent = {id:generateId(),room,shift,startTime,endTime,title,dept,date,note,status:'pending'};
     events.push(newEvent);
     await addEventToFirestore(newEvent);
   }
@@ -965,7 +1170,16 @@ function applyPasteReady(){
   const{room,shift}=copiedEvent;const{startRi,endRi}=evToRi(copiedEvent);const span=endRi-startRi+1;
   document.querySelectorAll(`.td-slot[data-room="${room}"][data-shift="${shift}"]`).forEach(td=>{
     const ri=parseInt(td.dataset.ri);const date=td.dataset.date;let canFit=true;
-    for(let r=ri;r<ri+span;r++){if(r>7){canFit=false;break;}const booked=events.find(e=>{if(e.room!==room||e.date!==date||e.shift!==shift)return false;const{startRi:s,endRi:en}=evToRi(e);return r>=s&&r<=en;});if(booked){canFit=false;break;}}
+    for(let r=ri;r<ri+span;r++){
+      if(r>7){canFit=false;break;}
+      const booked=events.find(e=>{
+        if(!visibleStatuses.has(e.status||'pending'))return false;
+        if(e.room!==room||e.date!==date||e.shift!==shift)return false;
+        const{startRi:s,endRi:en}=evToRi(e);
+        return r>=s&&r<=en;
+      });
+      if(booked){canFit=false;break;}
+    }
     if(canFit)td.classList.add('paste-ready');
   });
 }
@@ -979,6 +1193,7 @@ async function pasteEvent(room,date,shift,startRi){
 
   for(let r=startRi;r<=endRi;r++){
     const booked=events.find(e=>{
+      if(!visibleStatuses.has(e.status||'pending'))return false;
       if(e.room!==room||e.date!==date||e.shift!==shift)return false;
       const{startRi:s,endRi:en}=evToRi(e);
       return r>=s&&r<=en;
@@ -989,11 +1204,10 @@ async function pasteEvent(room,date,shift,startRi){
   if(endRi<startRi){showToast(`⚠️ 해당 위치에 이미 예약이 있습니다`);return;}
 
   const{startTime,endTime}=riToTimes(shift,startRi,endRi);
-  const newEv={...copiedEvent,id:generateId(),room,shift,date,startTime,endTime};
+  const newEv={...copiedEvent,id:generateId(),room,shift,date,startTime,endTime,status:'pending'};
   saveUndo();
   events.push(newEv);
   
-  // 🔥 Firestore에 추가
   await addEventToFirestore(newEv);
   
   buildTable();renderStats();refreshCopyHighlight();exitPasteMode();
@@ -1007,20 +1221,61 @@ async function pasteEvent(room,date,shift,startRi){
 }
 
 function showDetail(id,e){
-  selectedId=id;const ev=events.find(x=>x.id===id);const r=ROOMS.find(x=>x.id===ev.room);
-  const popup=document.getElementById('detailPopup');popup.style.borderTopColor=r.color;
+  selectedId=id;
+  const ev=events.find(x=>x.id===id);
+  const r=ROOMS.find(x=>x.id===ev.room);
+  const popup=document.getElementById('detailPopup');
+  popup.style.borderTopColor=r.color;
+  
   document.getElementById('dp-title').textContent=ev.title;
-  const shiftTxt=ev.shift==='day'?'주간':'야간';const days2=['일','월','화','수','목','금','토'];const dateObj=new Date(ev.date);
+  const shiftTxt=ev.shift==='day'?'주간':'야간';
+  const days2=['일','월','화','수','목','금','토'];
+  const dateObj=new Date(ev.date);
   document.getElementById('dp-sub').textContent=`${ev.date.slice(5).replace('-','/')} (${days2[dateObj.getDay()]}) ${shiftTxt}`;
+  
+  // 승인 상태 배지
+  const statusText = {
+    'pending': '⏳ 승인 대기',
+    'approved': '✓ 승인 완료',
+    'rejected': '✕ 반려됨'
+  };
+  const statusClass = ev.status || 'pending';
+  const statusBadge = `<div class="status-badge ${statusClass}">${statusText[statusClass]}</div>`;
+  
   document.getElementById('dp-body').innerHTML=`
     <div class="dr"><span class="di">⏰</span><div class="dr-text"><b>${ev.startTime} ~ ${ev.endTime}</b>　${shiftTxt}</div></div>
     <div class="dr"><span class="di">🏢</span><div class="dr-text">${r.name}</div></div>
     ${ev.dept?`<div class="dr"><span class="di">👤</span><div class="dr-text">${ev.dept}</div></div>`:''}
     ${ev.note?`<div class="dr"><span class="di">📝</span><div class="dr-text">${ev.note}</div></div>`:''}
+    <div class="dr"><span class="di">📊</span><div class="dr-text">${statusBadge}</div></div>
     <div class="dr"><span class="di" style="font-size:10px;">💡</span><div class="dr-text" style="font-size:10px;color:var(--tm);">더블클릭: 수정 | 클릭 시 자동 복사됨</div></div>`;
+  
+  // 버튼 구성 (승인 상태에 따라)
+  const footer = document.getElementById('dp-footer');
+  if (ev.status === 'pending') {
+    footer.innerHTML = `
+      <button class="btn-approve" onclick="approveEvent('${id}')">승인</button>
+      <button class="btn-reject" onclick="rejectEvent('${id}')">반려</button>
+      <button class="btn-edit" onclick="editEvent()">수정</button>
+      <button class="btn-del" onclick="deleteEvent()">삭제</button>
+    `;
+  } else {
+    footer.innerHTML = `
+      <button class="btn-edit" onclick="editEvent()">수정</button>
+      <button class="btn-del" onclick="deleteEvent()">삭제</button>
+    `;
+  }
+  
   popup.classList.add('open');
-  const vw=window.innerWidth,vh=window.innerHeight;let x=e.clientX+16,y=e.clientY-8;if(x+280>vw)x=e.clientX-285;if(y+280>vh)y=vh-290;if(y<8)y=8;popup.style.left=x+'px';popup.style.top=y+'px';
+  const vw=window.innerWidth,vh=window.innerHeight;
+  let x=e.clientX+16,y=e.clientY-8;
+  if(x+300>vw)x=e.clientX-305;
+  if(y+320>vh)y=vh-330;
+  if(y<8)y=8;
+  popup.style.left=x+'px';
+  popup.style.top=y+'px';
 }
+
 function closeDetail(){document.getElementById('detailPopup').classList.remove('open');}
 async function deleteEvent(){
   if(!selectedId)return;
@@ -1035,7 +1290,6 @@ async function deleteEvent(){
   
   events=events.filter(e=>e.id!==selectedId);
   
-  // 🔥 Firestore에서 삭제
   await deleteEventFromFirestore(eventId);
   
   deselectBlock();
@@ -1058,7 +1312,6 @@ function goToday(){currentMonday=getMonday(new Date());render();}
 window.addEventListener('load', async () => {
   console.log('🚀 앱 시작...');
   
-  // Firestore 로드 대기
   let retries = 0;
   while (!window.firestoreDB && retries < 20) {
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -1070,13 +1323,8 @@ window.addEventListener('load', async () => {
     return;
   }
   
-  // Firestore에서 데이터 로드
   await loadEventsFromFirestore();
-  
-  // 실시간 리스너 설정
   setupFirestoreListener();
-  
-  // UI 렌더링
   render();
   
   console.log('✅ 앱 초기화 완료');
