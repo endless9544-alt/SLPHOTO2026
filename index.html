@@ -187,6 +187,24 @@ table.gt th,table.gt td{border:1px solid var(--bl);text-align:center;vertical-al
   color:rgba(196,62,28,0.6);
 }
 
+/* 미운영 상태 - 옅은 회색 */
+.ev-block.status-outofservice{
+  opacity:0.4;
+  background:#d0d0d0 !important;
+  color:#666 !important;
+  border-left-color:#999 !important;
+  filter:grayscale(1);
+  cursor:not-allowed;
+}
+.ev-block.status-outofservice::after{
+  content:'🔧';
+  position:absolute;
+  top:2px;
+  right:3px;
+  font-size:10px;
+  opacity:0.7;
+}
+
 .ev-t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .ev-s{font-size:8px;font-weight:400;opacity:.85;}
 .ev-d{font-size:8px;font-weight:400;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -252,6 +270,10 @@ table.gt th,table.gt td{border:1px solid var(--bl);text-align:center;vertical-al
 .status-badge.rejected{
   background:#f8d7da;
   color:#721c24;
+}
+.status-badge.outofservice{
+  background:#e0e0e0;
+  color:#666;
 }
 
 /* 승인/반려 버튼 */
@@ -343,6 +365,11 @@ table.gt th,table.gt td{border:1px solid var(--bl);text-align:center;vertical-al
           <div class="f-dot" style="background:#c43e1c"></div>
           반려됨
         </label>
+        <label class="f-row">
+          <input type="checkbox" checked onchange="toggleStatus('outofservice',this)">
+          <div class="f-dot" style="background:#999"></div>
+          미운영
+        </label>
       </div>
     </div>
     
@@ -372,7 +399,10 @@ table.gt th,table.gt td{border:1px solid var(--bl);text-align:center;vertical-al
     <div class="modal-hd"><h3 id="modalTitle">새 예약 등록</h3><button onclick="closeModal()">×</button></div>
     <div class="modal-bd">
       <div class="slot-info" id="slotInfo" style="display:none"></div>
-      <div class="frow"><label>의뢰 부서 / 담당자</label><input id="f_dept" type="text" placeholder="예) 광학설계팀 / 홍길동"></div>
+      <div class="frow2">
+        <div class="frow"><label>의뢰 부서</label><input id="f_dept" type="text" placeholder="예) 광학설계팀"></div>
+        <div class="frow"><label>담당자</label><input id="f_manager" type="text" placeholder="예) 홍길동"></div>
+      </div>
       <div class="frow"><label>시험 내용</label><input id="f_title" type="text" placeholder="예) LED 배광 측정"></div>
       <div class="frow2">
         <div class="frow"><label>배광실</label><select id="f_room"></select></div>
@@ -388,6 +418,13 @@ table.gt th,table.gt td{border:1px solid var(--bl);text-align:center;vertical-al
       <div class="frow2">
         <div class="frow"><label>시작 시간</label><select id="f_start"></select></div>
         <div class="frow"><label>종료 시간</label><select id="f_end"></select></div>
+      </div>
+      <div class="frow" id="outOfServiceRow" style="display:none;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="f_outOfService" style="width:16px;height:16px;">
+          <span>🔧 미운영 (고장/재정비 등)</span>
+        </label>
+        <div style="font-size:10px;color:var(--tm);margin-top:4px;padding-left:24px;">※ 미운영으로 설정하면 해당 시간대는 예약이 불가능합니다</div>
       </div>
       <div class="frow"><label>비고</label><textarea id="f_note" placeholder="특이사항 (선택)"></textarea></div>
     </div>
@@ -510,7 +547,7 @@ const NIGHT_END_TO_RI={'21:00':0,'22:00':1,'23:00':2,'24:00':3,'02:00':4,'03:00'
 let currentMonday=getMonday(new Date());
 let events=[];
 let visibleRooms=new Set([1,2,3,4,5,6]);
-let visibleStatuses=new Set(['pending','approved','rejected']); // 상태 필터
+let visibleStatuses=new Set(['pending','approved','rejected','outofservice']); // 상태 필터
 let selectedId=null,editingId=null;
 let isFirestoreReady = false;
 let unsubscribeSnapshot = null;
@@ -732,17 +769,17 @@ function setupFirestoreListener() {
 async function seedEventsToFirestore() {
   const base = new Date(currentMonday);
   const sampleEvents = [
-    {room:1,dayOff:0,shift:'day',st:'08:00',et:'12:00',title:'LED 배광 측정',dept:'광학설계팀/김민준',status:'approved'},
-    {room:1,dayOff:0,shift:'night',st:'20:00',et:'23:00',title:'야간 Rework',dept:'품질팀/박정호',status:'pending'},
-    {room:2,dayOff:1,shift:'day',st:'09:00',et:'12:00',title:'프로젝터 광량',dept:'CAE팀/이수연',status:'approved'},
-    {room:2,dayOff:1,shift:'night',st:'20:00',et:'24:00',title:'야간 색도',dept:'광학설계팀/정미래',status:'pending'},
-    {room:3,dayOff:1,shift:'day',st:'10:00',et:'12:00',title:'Rework 재측정',dept:'품질팀/박정호',status:'approved'},
-    {room:4,dayOff:2,shift:'day',st:'08:00',et:'10:00',title:'긴급 평가',dept:'광학설계팀/이지훈',status:'pending'},
-    {room:5,dayOff:2,shift:'day',st:'13:00',et:'16:00',title:'색도 측정',dept:'광학설계팀/정미래',status:'approved'},
-    {room:6,dayOff:2,shift:'night',st:'20:00',et:'22:00',title:'헤드램프 야간',dept:'개발2팀/강태양',status:'pending'},
-    {room:3,dayOff:3,shift:'day',st:'13:00',et:'17:00',title:'신규 차종',dept:'개발3팀/한주원',status:'rejected'},
-    {room:1,dayOff:4,shift:'day',st:'08:00',et:'12:00',title:'법규 적합',dept:'인증팀/오도현',status:'approved'},
-    {room:4,dayOff:4,shift:'day',st:'13:00',et:'17:00',title:'G65 Selective',dept:'광학설계팀/임채은',status:'pending'},
+    {room:1,dayOff:0,shift:'day',st:'08:00',et:'12:00',title:'LED 배광 측정',dept:'광학설계팀',manager:'김민준',status:'approved'},
+    {room:1,dayOff:0,shift:'night',st:'20:00',et:'23:00',title:'야간 Rework',dept:'품질팀',manager:'박정호',status:'pending'},
+    {room:2,dayOff:1,shift:'day',st:'09:00',et:'12:00',title:'프로젝터 광량',dept:'CAE팀',manager:'이수연',status:'approved'},
+    {room:2,dayOff:1,shift:'night',st:'20:00',et:'24:00',title:'야간 색도',dept:'광학설계팀',manager:'정미래',status:'pending'},
+    {room:3,dayOff:1,shift:'day',st:'10:00',et:'12:00',title:'Rework 재측정',dept:'품질팀',manager:'박정호',status:'approved'},
+    {room:4,dayOff:2,shift:'day',st:'08:00',et:'10:00',title:'긴급 평가',dept:'광학설계팀',manager:'이지훈',status:'pending'},
+    {room:5,dayOff:2,shift:'day',st:'13:00',et:'16:00',title:'색도 측정',dept:'광학설계팀',manager:'정미래',status:'approved'},
+    {room:6,dayOff:2,shift:'night',st:'20:00',et:'22:00',title:'헤드램프 야간',dept:'개발2팀',manager:'강태양',status:'pending'},
+    {room:3,dayOff:3,shift:'day',st:'13:00',et:'17:00',title:'신규 차종',dept:'개발3팀',manager:'한주원',status:'rejected'},
+    {room:1,dayOff:4,shift:'day',st:'08:00',et:'12:00',title:'법규 적합',dept:'인증팀',manager:'오도현',status:'approved'},
+    {room:4,dayOff:4,shift:'day',st:'13:00',et:'17:00',title:'G65 Selective',dept:'광학설계팀',manager:'임채은',status:'pending'},
   ];
   
   for (const ev of sampleEvents) {
@@ -756,6 +793,7 @@ async function seedEventsToFirestore() {
       endTime: ev.et,
       title: ev.title,
       dept: ev.dept,
+      manager: ev.manager,
       date: fmtDate(d),
       note: '',
       status: ev.status || 'pending'
@@ -910,7 +948,8 @@ function buildTable(){
             block.className=`ev-block ${statusClass}`;
             block.dataset.evid=startingEv.id;
             block.style.cssText=`background:${room.bg};color:${room.color};border-left-color:${room.color};height:${span*rowH+(span-1)+extraPx-2}px;`;
-            block.innerHTML=`<div class="ev-t">${startingEv.title}</div><div class="ev-s">${startingEv.startTime}~${startingEv.endTime}</div><div class="ev-d">${startingEv.dept||''}</div>`;
+            const deptDisplay = startingEv.manager ? `${startingEv.dept || ''} / ${startingEv.manager}` : (startingEv.dept || '');
+            block.innerHTML=`<div class="ev-t">${startingEv.title}</div><div class="ev-s">${startingEv.startTime}~${startingEv.endTime}</div><div class="ev-d">${deptDisplay}</div>`;
             
             const hTop=document.createElement('div');hTop.className='ev-resize-handle top';hTop.title='드래그로 시작 시간 조절';
             hTop.addEventListener('mousedown',e=>{e.stopPropagation();onResizeStart(e,startingEv.id,'top');});
@@ -932,6 +971,13 @@ let blockDrag=null;
 function onBlockDragStart(e,evId){
   if(e.button!==0)return;if(clickTimer)return;
   const ev=events.find(x=>x.id===evId);if(!ev)return;
+  
+  // 미운영 블록은 관리자만 드래그 가능
+  if(ev.status === 'outofservice' && !isAdminMode) {
+    showToast('⚠️ 미운영 일정은 관리자만 이동할 수 있습니다');
+    return;
+  }
+  
   const{startRi,endRi}=evToRi(ev);const span=endRi-startRi+1;
   const td=e.currentTarget.closest('td')||e.target.closest('td');const grabRi=td?parseInt(td.dataset.ri||startRi):startRi;
   blockDrag={evId,room:ev.room,shift:ev.shift,origStartRi:startRi,origEndRi:endRi,span,grabRi,currentTargetRi:startRi,currentTargetDate:ev.date,currentTargetShift:ev.shift,moved:false};
@@ -987,6 +1033,13 @@ let blockResize=null;
 function onResizeStart(e,evId,edge){
   if(e.button!==0)return;e.preventDefault();e.stopPropagation();
   const ev=events.find(x=>x.id===evId);if(!ev)return;
+  
+  // 미운영 블록은 관리자만 리사이즈 가능
+  if(ev.status === 'outofservice' && !isAdminMode) {
+    showToast('⚠️ 미운영 일정은 관리자만 수정할 수 있습니다');
+    return;
+  }
+  
   const{startRi,endRi}=evToRi(ev);
   const startTd=document.querySelector(`.td-slot[data-room="${ev.room}"][data-date="${ev.date}"][data-shift="${ev.shift}"][data-ri="${startRi}"]`);
   if(!startTd)return;
@@ -1117,7 +1170,15 @@ function confirmSelection(){
     const{startRi:s,endRi:en}=evToRi(e);
     return startRi<=en&&endRi>=s;
   });
-  if(conflict){const r=ROOMS.find(r=>r.id===room);alert(`⚠️ ${r.name} ${shift==='day'?'주간':'야간'}에 겹치는 예약이 있습니다.\n(${conflict.title} ${conflict.startTime}~${conflict.endTime})`);clearDrag();return;}
+  if(conflict){
+    const r=ROOMS.find(r=>r.id===room);
+    const conflictMsg = conflict.status === 'outofservice' 
+      ? `⚠️ ${r.name} ${shift==='day'?'주간':'야간'}은 미운영 중입니다.\n(${conflict.startTime}~${conflict.endTime})`
+      : `⚠️ ${r.name} ${shift==='day'?'주간':'야간'}에 겹치는 예약이 있습니다.\n(${conflict.title} ${conflict.startTime}~${conflict.endTime})`;
+    alert(conflictMsg);
+    clearDrag();
+    return;
+  }
   selection={room,date,shift,startRi,endRi};cursor={room,date,shift,ri:startRi};applySelection();applyCursor();
 }
 function applySelection(){clearSelectionHighlight();if(!selection)return;const{room,date,shift,startRi,endRi}=selection;for(let ri=startRi;ri<=endRi;ri++){document.querySelectorAll(`.td-slot[data-room="${room}"][data-date="${date}"][data-shift="${shift}"][data-ri="${ri}"]`).forEach(c=>c.classList.add('selected'));}}
@@ -1207,7 +1268,19 @@ function renderStats(){
 // ── MODAL ──
 function updateTimeOpts(defStart,defEnd){const shift=document.getElementById('f_shift').value;const times=shift==='day'?DAY_TIMES:NIGHT_TIMES;const fs=document.getElementById('f_start');const fe=document.getElementById('f_end');fs.innerHTML=times.slice(0,-1).map(t=>`<option value="${t}">${t}</option>`).join('');fe.innerHTML=times.slice(1).map(t=>`<option value="${t}">${t}</option>`).join('');fs.value=defStart||times[0];fe.value=defEnd||times[times.length-1];}
 function openModal(pre){
-  editingId=null;document.getElementById('modalTitle').textContent='새 예약 등록';['f_dept','f_title','f_note'].forEach(id=>document.getElementById(id).value='');
+  editingId=null;document.getElementById('modalTitle').textContent='새 예약 등록';
+  ['f_dept','f_manager','f_title','f_note'].forEach(id=>document.getElementById(id).value='');
+  
+  // 신규 등록 시에는 모든 필드 활성화
+  document.getElementById('f_dept').disabled = false;
+  document.getElementById('f_manager').disabled = false;
+  
+  // 미운영 체크박스 초기화
+  document.getElementById('f_outOfService').checked = false;
+  
+  // 관리자만 미운영 설정 가능
+  document.getElementById('outOfServiceRow').style.display = isAdminMode ? 'block' : 'none';
+  
   const sel=document.getElementById('f_room');sel.innerHTML=ROOMS.map(r=>`<option value="${r.id}">${r.name}</option>`).join('');
   if(pre?.room)sel.value=pre.room;document.getElementById('f_shift').value=pre?.shift||'day';updateTimeOpts(pre?.startTime,pre?.endTime);document.getElementById('f_date').value=pre?.date||fmtDate(new Date());
   const si=document.getElementById('slotInfo');if(pre){si.style.display='block';si.textContent=`📌 ${ROOMS.find(r=>r.id==pre.room)?.name||''} / ${pre.date} / ${pre.shift==='day'?'주간':'야간'} ${pre.startTime}~${pre.endTime}`;}else si.style.display='none';
@@ -1215,8 +1288,25 @@ function openModal(pre){
 }
 function closeModal(){document.getElementById('overlay').classList.remove('open');editingId=null;}
 async function submitReservation(){
-  const title=document.getElementById('f_title').value.trim();const dept=document.getElementById('f_dept').value.trim();const room=parseInt(document.getElementById('f_room').value);const date=document.getElementById('f_date').value;const shift=document.getElementById('f_shift').value;const startTime=document.getElementById('f_start').value;const endTime=document.getElementById('f_end').value;const note=document.getElementById('f_note').value.trim();
-  if(!title||!date){alert('필수 항목을 입력하세요.');return;}
+  const title=document.getElementById('f_title').value.trim();
+  const dept=document.getElementById('f_dept').value.trim();
+  const manager=document.getElementById('f_manager').value.trim();
+  const room=parseInt(document.getElementById('f_room').value);
+  const date=document.getElementById('f_date').value;
+  const shift=document.getElementById('f_shift').value;
+  const startTime=document.getElementById('f_start').value;
+  const endTime=document.getElementById('f_end').value;
+  const note=document.getElementById('f_note').value.trim();
+  const isOutOfService=document.getElementById('f_outOfService').checked;
+  
+  // 미운영 설정 시 제목 자동 설정
+  const finalTitle = isOutOfService ? '미운영' : title;
+  const finalDept = isOutOfService ? '시설관리' : dept;
+  const finalManager = isOutOfService ? '관리자' : manager;
+  
+  if(!isOutOfService && (!title||!date)){alert('필수 항목을 입력하세요.');return;}
+  if(!editingId && !isOutOfService && (!dept||!manager)){alert('의뢰 부서와 담당자를 입력하세요.');return;}
+  
   const sMap=shift==='day'?DAY_START_TO_RI:NIGHT_START_TO_RI;const eMap=shift==='day'?DAY_END_TO_RI:NIGHT_END_TO_RI;const newS=sMap[startTime]??0,newE=eMap[endTime]??0;
   const conflict=events.filter(e=>{
     if(e.id===editingId||e.room!==room||e.date!==date||e.shift!==shift)return false;
@@ -1231,17 +1321,27 @@ async function submitReservation(){
   if(editingId){
     const ev = events.find(e=>e.id===editingId);
     if(ev){
-      ev.room=room;ev.shift=shift;ev.startTime=startTime;ev.endTime=endTime;ev.title=title;ev.dept=dept;ev.date=date;ev.note=note;
+      // 관리자는 모든 항목 수정 가능, 일반 사용자는 시험 내용만
+      if (isAdminMode) {
+        ev.room=room;ev.shift=shift;ev.startTime=startTime;ev.endTime=endTime;
+        ev.title=finalTitle;ev.dept=finalDept;ev.manager=finalManager;ev.date=date;ev.note=note;
+        ev.status = isOutOfService ? 'outofservice' : ev.status;
+      } else {
+        // 일반 사용자는 시험 내용만 수정
+        ev.title=title;ev.note=note;
+      }
       await updateEventInFirestore(ev);
     }
   }else{
-    // 관리자는 자동 승인, 일반 사용자는 승인 대기
-    const status = isAdminMode ? 'approved' : 'pending';
-    const newEvent = {id:generateId(),room,shift,startTime,endTime,title,dept,date,note,status};
+    // 미운영은 자동으로 outofservice 상태
+    const status = isOutOfService ? 'outofservice' : (isAdminMode ? 'approved' : 'pending');
+    const newEvent = {id:generateId(),room,shift,startTime,endTime,title:finalTitle,dept:finalDept,manager:finalManager,date,note,status};
     events.push(newEvent);
     await addEventToFirestore(newEvent);
     
-    if (isAdminMode) {
+    if (isOutOfService) {
+      showToast('🔧 미운영 일정이 등록되었습니다');
+    } else if (isAdminMode) {
       showToast('✅ 예약이 승인되었습니다');
     } else {
       showToast('⏳ 예약 신청이 완료되었습니다. 관리자 승인을 기다려주세요');
@@ -1259,15 +1359,61 @@ function handleBlockClick(id,e){
   else{clickTimer=setTimeout(()=>{clickTimer=null;selectBlock(id,e);},200);}
 }
 function selectBlock(id,e){
-  deselectBlock();selectedId=id;copiedEvent={...events.find(x=>x.id===id)};pasteMode=false;
+  deselectBlock();selectedId=id;
+  const ev = events.find(x=>x.id===id);
+  copiedEvent={...ev};
+  pasteMode=false;
   document.querySelectorAll(`.ev-block[data-evid="${id}"]`).forEach(el=>el.classList.add('ev-selected','copied'));
-  showToast(`📋 "${copiedEvent.title}" 선택됨 — 붙여넣을 셀을 클릭 후 Ctrl+V`);showDetail(id,e);
+  
+  if(ev.status === 'outofservice') {
+    showToast(`📋 미운영 일정 선택됨 — 관리자만 붙여넣기 가능`);
+  } else {
+    showToast(`📋 "${copiedEvent.title}" 선택됨 — 붙여넣을 셀을 클릭 후 Ctrl+V`);
+  }
+  showDetail(id,e);
 }
 function deselectBlock(){document.querySelectorAll('.ev-block.ev-selected').forEach(el=>el.classList.remove('ev-selected','copied'));selectedId=null;}
 function openEditModal(id){
-  const ev=events.find(e=>e.id===id);if(!ev)return;editingId=id;document.getElementById('modalTitle').textContent='예약 수정';
+  const ev=events.find(e=>e.id===id);if(!ev)return;
+  
+  // 미운영 블록은 관리자만 수정 가능
+  if(ev.status === 'outofservice' && !isAdminMode) {
+    showToast('⚠️ 미운영 일정은 관리자만 수정할 수 있습니다');
+    return;
+  }
+  
+  editingId=id;document.getElementById('modalTitle').textContent='예약 수정';
   const sel=document.getElementById('f_room');sel.innerHTML=ROOMS.map(r=>`<option value="${r.id}">${r.name}</option>`).join('');sel.value=ev.room;
-  document.getElementById('f_title').value=ev.title;document.getElementById('f_dept').value=ev.dept;document.getElementById('f_date').value=ev.date;document.getElementById('f_note').value=ev.note;document.getElementById('f_shift').value=ev.shift;
+  document.getElementById('f_title').value=ev.title;
+  document.getElementById('f_dept').value=ev.dept||'';
+  document.getElementById('f_manager').value=ev.manager||'';
+  document.getElementById('f_date').value=ev.date;
+  document.getElementById('f_note').value=ev.note||'';
+  document.getElementById('f_shift').value=ev.shift;
+  
+  // 미운영 체크박스 설정
+  document.getElementById('f_outOfService').checked = (ev.status === 'outofservice');
+  document.getElementById('outOfServiceRow').style.display = isAdminMode ? 'block' : 'none';
+  
+  // 관리자가 아닌 경우 의뢰부서, 담당자, 날짜, 시간 등 수정 불가
+  if (!isAdminMode) {
+    document.getElementById('f_dept').disabled = true;
+    document.getElementById('f_manager').disabled = true;
+    document.getElementById('f_room').disabled = true;
+    document.getElementById('f_date').disabled = true;
+    document.getElementById('f_shift').disabled = true;
+    document.getElementById('f_start').disabled = true;
+    document.getElementById('f_end').disabled = true;
+  } else {
+    document.getElementById('f_dept').disabled = false;
+    document.getElementById('f_manager').disabled = false;
+    document.getElementById('f_room').disabled = false;
+    document.getElementById('f_date').disabled = false;
+    document.getElementById('f_shift').disabled = false;
+    document.getElementById('f_start').disabled = false;
+    document.getElementById('f_end').disabled = false;
+  }
+  
   updateTimeOpts(ev.startTime,ev.endTime);document.getElementById('slotInfo').style.display='none';document.getElementById('overlay').classList.add('open');
 }
 
@@ -1303,6 +1449,13 @@ function applyPasteReady(){
 }
 async function pasteEvent(room,date,shift,startRi){
   if(!copiedEvent)return;
+  
+  // 미운영은 관리자만 붙여넣기 가능
+  if(copiedEvent.status === 'outofservice' && !isAdminMode) {
+    showToast('⚠️ 미운영 일정은 관리자만 복사할 수 있습니다');
+    return;
+  }
+  
   const{startRi:origStart,endRi:origEnd}=evToRi(copiedEvent);
   const span=origEnd-origStart+1;
   let endRi=startRi+span-1;
@@ -1322,7 +1475,21 @@ async function pasteEvent(room,date,shift,startRi){
   if(endRi<startRi){showToast(`⚠️ 해당 위치에 이미 예약이 있습니다`);return;}
 
   const{startTime,endTime}=riToTimes(shift,startRi,endRi);
-  const newEv={...copiedEvent,id:generateId(),room,shift,date,startTime,endTime,status:'pending'};
+  
+  // 미운영은 상태 유지, 일반 예약은 권한에 따라 처리
+  let pasteStatus;
+  if(copiedEvent.status === 'outofservice') {
+    pasteStatus = 'outofservice';
+  } else {
+    pasteStatus = isAdminMode ? 'approved' : 'pending';
+  }
+  
+  const newEv={
+    ...copiedEvent,
+    id:generateId(),
+    room,shift,date,startTime,endTime,
+    status: pasteStatus
+  };
   saveUndo();
   events.push(newEv);
   
@@ -1331,7 +1498,10 @@ async function pasteEvent(room,date,shift,startRi){
   buildTable();renderStats();refreshCopyHighlight();exitPasteMode();
   const hrs=endRi-startRi+1;
   const shiftLbl=shift==='day'?'주간':'야간';
-  if(hrs<span){
+  
+  if(copiedEvent.status === 'outofservice') {
+    showToast(`🔧 미운영 일정 복사됨 → ${date} ${shiftLbl} ${startTime}~${endTime}`);
+  } else if(hrs<span){
     showToast(`✅ "${newEv.title}" → ${date} ${shiftLbl} ${startTime}~${endTime} (원본 ${span}h → ${hrs}h로 축소)`);
   } else {
     showToast(`✅ "${newEv.title}" → ${date} ${shiftLbl} ${startTime}~${endTime}`);
@@ -1355,7 +1525,8 @@ function showDetail(id,e){
   const statusText = {
     'pending': '⏳ 승인 대기',
     'approved': '✓ 승인 완료',
-    'rejected': '✕ 반려됨'
+    'rejected': '✕ 반려됨',
+    'outofservice': '🔧 미운영'
   };
   const statusClass = ev.status || 'pending';
   const statusBadge = `<div class="status-badge ${statusClass}">${statusText[statusClass]}</div>`;
@@ -1363,7 +1534,8 @@ function showDetail(id,e){
   document.getElementById('dp-body').innerHTML=`
     <div class="dr"><span class="di">⏰</span><div class="dr-text"><b>${ev.startTime} ~ ${ev.endTime}</b>　${shiftTxt}</div></div>
     <div class="dr"><span class="di">🏢</span><div class="dr-text">${r.name}</div></div>
-    ${ev.dept?`<div class="dr"><span class="di">👤</span><div class="dr-text">${ev.dept}</div></div>`:''}
+    ${ev.dept?`<div class="dr"><span class="di">🏛️</span><div class="dr-text">${ev.dept}</div></div>`:''}
+    ${ev.manager?`<div class="dr"><span class="di">👤</span><div class="dr-text">${ev.manager}</div></div>`:''}
     ${ev.note?`<div class="dr"><span class="di">📝</span><div class="dr-text">${ev.note}</div></div>`:''}
     <div class="dr"><span class="di">📊</span><div class="dr-text">${statusBadge}</div></div>
     <div class="dr"><span class="di" style="font-size:10px;">💡</span><div class="dr-text" style="font-size:10px;color:var(--tm);">더블클릭: 수정 | 클릭 시 자동 복사됨</div></div>`;
