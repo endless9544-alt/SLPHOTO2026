@@ -37,6 +37,44 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--tp);
 /* MAIN */
 .main{display:flex;flex:1;overflow:hidden;}
 
+/* 좌측 탭 바 */
+.tab-bar{
+  width:52px;
+  background:#1b1a19;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:8px 0;
+  gap:4px;
+  flex-shrink:0;
+  z-index:20;
+}
+.tab-btn{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:3px;
+  padding:10px 6px;
+  border-radius:6px;
+  cursor:pointer;
+  border:none;
+  background:transparent;
+  color:#a19f9d;
+  font-size:9px;
+  font-family:inherit;
+  width:44px;
+  text-align:center;
+  transition:background .12s,color .12s;
+}
+.tab-btn:hover{background:#323130;color:#fff;}
+.tab-btn.active{background:#0078d4;color:#fff;}
+.tab-btn .tab-icon{font-size:18px;line-height:1;}
+.tab-btn .tab-label{font-size:9px;font-weight:600;line-height:1.2;word-break:keep-all;}
+
+/* 콘텐츠 패널 */
+.panel{display:none;flex:1;overflow:hidden;}
+.panel.active{display:flex;}
+
 /* SIDEBAR */
 .sidebar{width:165px;background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;padding:12px 0;}
 .sb-sec{padding:0 12px 14px;}
@@ -122,7 +160,69 @@ table.gt th,table.gt td{border:1px solid var(--bl);text-align:center;vertical-al
 .td-slot.resize-shrink::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(135deg,transparent,transparent 4px,rgba(150,80,0,.12) 4px,rgba(150,80,0,.12) 6px);pointer-events:none;}
 .td-slot.drop-target{background:rgba(0,120,212,.22)!important;outline:2px dashed rgba(0,120,212,.7)!important;outline-offset:-2px;}
 .td-slot.drop-blocked{background:rgba(196,62,28,.15)!important;outline:2px dashed rgba(196,62,28,.6)!important;outline-offset:-2px;}
-/* 토스트 */
+/* 날짜 전체 블락 */
+.th-date.blocked-col{
+  background:#e8d5d5 !important;
+  color:#8b1a1a !important;
+  cursor:pointer;
+  position:relative;
+}
+.th-date.blocked-col::after{
+  content:'🚫';
+  margin-left:4px;
+  font-size:11px;
+}
+.th-date.admin-hoverable:hover{
+  background:#c8d8ee !important;
+  cursor:pointer;
+}
+.th-date.admin-hoverable.blocked-col:hover{
+  background:#d4b0b0 !important;
+}
+
+/* 블락된 날의 셀 오버레이 */
+.td-slot.day-blocked{
+  background:repeating-linear-gradient(
+    45deg,
+    #f5e8e8,
+    #f5e8e8 6px,
+    #edd8d8 6px,
+    #edd8d8 12px
+  ) !important;
+  cursor:not-allowed !important;
+  position:relative;
+}
+.td-slot.day-blocked:hover{filter:none !important;}
+
+/* 블락 사유 표시 (각 배광실 행 첫번째 셀) */
+.day-block-label{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:11px;
+  font-weight:700;
+  color:#8b1a1a;
+  letter-spacing:1px;
+  pointer-events:none;
+  writing-mode:vertical-rl;
+  text-orientation:mixed;
+  opacity:.55;
+}
+
+/* 블락 등록 모달 */
+.block-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:center;justify-content:center;}
+.block-overlay.open{display:flex;}
+.block-modal{background:#fff;border-radius:6px;width:380px;box-shadow:0 8px 30px rgba(0,0,0,.2);overflow:hidden;}
+.block-modal-hd{background:#8b1a1a;color:#fff;padding:12px 15px;display:flex;align-items:center;justify-content:space-between;}
+.block-modal-hd h3{font-size:13px;font-weight:600;}
+.block-modal-hd button{background:none;border:none;color:#fff;font-size:19px;cursor:pointer;line-height:1;}
+.block-preset{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.block-preset-btn{background:#f5f5f5;border:1px solid var(--border);padding:4px 10px;border-radius:12px;font-size:11px;cursor:pointer;color:var(--ts);}
+.block-preset-btn:hover{background:#fee;border-color:#c43e1c;color:#8b1a1a;}
+.block-preset-btn.holiday{background:#fff3e0;border-color:#e65100;color:#bf360c;}
+.block-preset-btn.company{background:#e8f5e9;border-color:#2e7d32;color:#1b5e20;}
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#323130;color:#fff;padding:9px 20px;border-radius:20px;font-size:12px;font-weight:500;z-index:500;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;}
 .toast.show{opacity:1;}
 
@@ -308,6 +408,216 @@ table.gt th,table.gt td{border:1px solid var(--bl);text-align:center;vertical-al
 .pin-btn.cancel:hover{background:#e0e0e0;}
 .pin-btn.submit{background:var(--accent);color:#fff;}
 .pin-btn.submit:hover{background:var(--ah);}
+
+/* ══════════ 광학 탭 ══════════ */
+.optics-wrap{flex:1;overflow:auto;background:#f8f7f6;display:flex;flex-direction:column;}
+.optics-toolbar{background:#fff;border-bottom:2px solid var(--border);display:flex;align-items:center;gap:10px;padding:0 16px;height:46px;flex-shrink:0;}
+.optics-title{font-size:14px;font-weight:700;color:#5c3d9e;}
+.optics-nav-g{display:flex;align-items:center;border:1px solid var(--border);border-radius:5px;overflow:hidden;}
+.optics-nav-b{background:#fff;border:none;cursor:pointer;padding:4px 11px;font-size:14px;color:var(--ts);}
+.optics-nav-b:hover{background:var(--bg);}
+.optics-week-lbl{font-size:13px;font-weight:700;color:var(--tp);padding:0 14px;min-width:110px;text-align:center;}
+.btn-optics-new{background:#5c3d9e;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;}
+.btn-optics-new:hover{background:#4a3080;}
+
+/* 광학 테이블 */
+.optics-table-wrap{padding:12px;min-width:max-content;}
+table.ot{border-collapse:collapse;background:#fff;border:2px solid var(--border);}
+table.ot th,table.ot td{border:1px solid var(--bl);white-space:nowrap;}
+
+/* 광학 헤더 */
+.ot-th-corner{background:#e4e2e0;font-size:12px;font-weight:700;padding:6px 10px;position:sticky;top:0;z-index:15;text-align:center;}
+.ot-th-date{font-size:13px;font-weight:700;padding:8px 6px;height:36px;background:#d4d2d0;color:var(--tp);position:sticky;top:0;z-index:10;text-align:center;min-width:270px;}
+.ot-th-date.today-col{background:#b0ccee;color:#002060;}
+
+/* 배광실 행 */
+.ot-td-room{font-size:13px;font-weight:700;padding:6px 10px;text-align:center;vertical-align:top;border-right:2px solid var(--border)!important;background:#f0ebff;color:#5c3d9e;min-width:99px;height:152px;}
+.ot-td-cell{vertical-align:top;padding:0;min-width:270px;height:152px;cursor:pointer;position:relative;transition:background .08s;}
+.ot-td-cell:hover{background:rgba(92,61,158,.06);}
+.ot-td-cell.today-col{background:#fffbe6;}
+.ot-td-cell.na-col{background:#f0efee;cursor:default;}
+.ot-td-sep td{border-top:3px solid var(--border)!important;height:0;padding:0;background:#dcdad8;}
+
+/* 광학 셀 카드 */
+.ot-card{padding:8px 10px;font-size:11px;line-height:1.7;color:var(--tp);height:100%;display:flex;flex-direction:column;gap:2px;}
+.ot-card .oc-row{display:flex;gap:5px;}
+.ot-card .oc-lbl{font-size:10px;font-weight:700;color:#5c3d9e;min-width:30px;}
+.ot-card .oc-val{font-size:11px;color:var(--tp);white-space:normal;word-break:keep-all;}
+.ot-card.empty-card{align-items:center;justify-content:center;opacity:.35;font-size:12px;color:var(--tm);}
+
+/* 광학 미운영 카드 */
+.ot-card.outofservice-card{
+  align-items:center;
+  justify-content:center;
+  background:repeating-linear-gradient(
+    45deg,
+    #e8e6e4,
+    #e8e6e4 6px,
+    #d8d6d4 6px,
+    #d8d6d4 12px
+  );
+  color:#666;
+  font-size:13px;
+  font-weight:700;
+  text-align:center;
+  border-left:3px solid #999 !important;
+  cursor:pointer;
+  gap:6px;
+}
+.ot-card.outofservice-card .oos-icon{
+  font-size:24px;
+  opacity:.6;
+}
+.ot-card.outofservice-card .oos-label{
+  font-size:13px;
+  font-weight:700;
+  color:#555;
+  letter-spacing:1px;
+}
+.ot-card.outofservice-card .oos-note{
+  font-size:10px;
+  font-weight:400;
+  color:#888;
+  margin-top:2px;
+}
+.ot-td-cell.outofservice-cell{
+  background:#f0efee !important;
+}
+.ot-td-cell.outofservice-cell:hover{
+  background:#e8e6e4 !important;
+}
+
+/* 등록자 표시 (광학 카드 우측 상단) */
+.ot-card .oc-author{
+  position:absolute;
+  top:4px;
+  right:6px;
+  font-size:9px;
+  color:#888;
+  font-weight:500;
+}
+.ot-td-cell{position:relative;}
+
+/* 광학 카드 선택 상태 (Delete 키 대상 표시) */
+.ot-card.ot-selected{
+  outline:2px solid #5c3d9e !important;
+  outline-offset:-2px;
+  box-shadow:0 0 0 3px rgba(92,61,158,.2);
+}
+
+/* 휴지통 버튼 */
+.btn-trash{
+  background:#fff;
+  border:1px solid var(--border);
+  padding:6px 12px;
+  border-radius:4px;
+  cursor:pointer;
+  font-size:12px;
+  color:var(--ts);
+  position:relative;
+}
+.btn-trash:hover{border-color:var(--accent);color:var(--accent);background:#eff6fc;}
+.btn-trash .trash-badge{
+  position:absolute;
+  top:-6px;
+  right:-6px;
+  background:#c43e1c;
+  color:#fff;
+  font-size:9px;
+  font-weight:700;
+  min-width:16px;
+  height:16px;
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0 4px;
+}
+
+/* 휴지통 모달 */
+.trash-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:center;justify-content:center;}
+.trash-overlay.open{display:flex;}
+.trash-modal{background:#fff;border-radius:6px;width:600px;max-height:80vh;box-shadow:0 8px 30px rgba(0,0,0,.2);overflow:hidden;display:flex;flex-direction:column;}
+.trash-hd{background:#5c3d9e;color:#fff;padding:12px 15px;display:flex;align-items:center;justify-content:space-between;}
+.trash-hd h3{font-size:14px;font-weight:600;}
+.trash-hd button{background:none;border:none;color:#fff;font-size:19px;cursor:pointer;line-height:1;}
+.trash-bd{padding:0;overflow-y:auto;flex:1;}
+.trash-empty{text-align:center;padding:40px 20px;color:var(--tm);font-size:13px;}
+.trash-list{display:flex;flex-direction:column;}
+.trash-item{padding:12px 16px;border-bottom:1px solid #eee;display:flex;align-items:center;gap:12px;}
+.trash-item:hover{background:#f8f7f6;}
+.trash-info{flex:1;min-width:0;}
+.trash-info-main{font-size:13px;font-weight:600;color:var(--tp);margin-bottom:2px;}
+.trash-info-sub{font-size:10px;color:var(--tm);line-height:1.5;}
+.trash-info-sub b{color:var(--ts);}
+.trash-actions{display:flex;gap:6px;flex-shrink:0;}
+.btn-restore{background:#107c10;color:#fff;border:none;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;}
+.btn-restore:hover{background:#0e6b0e;}
+.btn-permdel{background:none;border:1px solid #c43e1c;color:#c43e1c;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;}
+.btn-permdel:hover{background:#fdf0ee;}
+.trash-ft{padding:10px 15px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:#f8f7f6;}
+.trash-info-text{font-size:10px;color:var(--tm);}
+
+/* 히스토리 모달 */
+.hist-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:center;justify-content:center;}
+.hist-overlay.open{display:flex;}
+.hist-modal{background:#fff;border-radius:6px;width:520px;max-height:78vh;box-shadow:0 8px 30px rgba(0,0,0,.2);overflow:hidden;display:flex;flex-direction:column;}
+.hist-hd{background:#5c3d9e;color:#fff;padding:12px 15px;display:flex;align-items:center;justify-content:space-between;}
+.hist-hd h3{font-size:14px;font-weight:600;}
+.hist-hd button{background:none;border:none;color:#fff;font-size:19px;cursor:pointer;line-height:1;}
+.hist-bd{padding:0;overflow-y:auto;flex:1;}
+.hist-empty{text-align:center;padding:40px 20px;color:var(--tm);font-size:13px;}
+.hist-list{display:flex;flex-direction:column;}
+.hist-item{padding:10px 14px;border-bottom:1px solid #eee;display:flex;gap:10px;align-items:flex-start;}
+.hist-item:hover{background:#f8f7f6;}
+.hist-icon{font-size:16px;margin-top:1px;flex-shrink:0;}
+.hist-info{flex:1;min-width:0;}
+.hist-action{font-size:11px;font-weight:700;margin-bottom:3px;}
+.hist-action.create{color:#107c10;}
+.hist-action.edit{color:#0078d4;}
+.hist-action.delete{color:#c43e1c;}
+.hist-action.restore{color:#5c3d9e;}
+.hist-meta{font-size:10px;color:var(--tm);line-height:1.6;}
+.hist-meta b{color:var(--ts);}
+.hist-diff{font-size:10px;background:#f5f5f5;border-radius:3px;padding:4px 7px;margin-top:4px;line-height:1.6;border-left:2px solid #ddd;}
+.hist-diff .diff-old{color:#c43e1c;text-decoration:line-through;}
+.hist-diff .diff-new{color:#107c10;}
+.hist-ft{padding:10px 15px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:#f8f7f6;}
+.btn-hist{background:none;border:1px solid var(--border);padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px;color:var(--ts);}
+.btn-hist:hover{border-color:#5c3d9e;color:#5c3d9e;background:#f0ebff;}
+
+/* 삭제자 확인 모달 */
+.del-confirm-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1100;align-items:center;justify-content:center;}
+.del-confirm-overlay.open{display:flex;}
+.del-confirm-box{background:#fff;border-radius:8px;padding:22px 24px;box-shadow:0 8px 30px rgba(0,0,0,.3);min-width:320px;max-width:380px;}
+.del-confirm-title{font-size:15px;font-weight:700;margin-bottom:6px;color:#c43e1c;}
+.del-confirm-info{font-size:11px;color:var(--ts);background:#f8f7f6;border-radius:4px;padding:8px 10px;margin-bottom:12px;line-height:1.7;}
+.del-confirm-info b{color:var(--tp);}
+.del-confirm-label{font-size:10px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
+.del-confirm-input{width:100%;border:1px solid var(--border);border-radius:4px;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;transition:border-color .12s;}
+.del-confirm-input:focus{border-color:#c43e1c;}
+.del-confirm-hint{font-size:10px;color:var(--tm);margin-top:5px;}
+.del-confirm-buttons{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;}
+.del-confirm-btn-cancel{background:none;border:1px solid var(--border);padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12px;color:var(--ts);}
+.del-confirm-btn-cancel:hover{background:#f5f5f5;}
+.del-confirm-btn-ok{background:#c43e1c;color:#fff;border:none;padding:6px 16px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;}
+.del-confirm-btn-ok:hover{background:#a33518;}
+
+/* 광학 모달 */
+.ot-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center;}
+.ot-overlay.open{display:flex;}
+.ot-modal{background:#fff;border-radius:6px;width:440px;box-shadow:0 8px 30px rgba(0,0,0,.2);overflow:hidden;}
+.ot-modal-hd{background:#5c3d9e;color:#fff;padding:12px 15px;display:flex;align-items:center;justify-content:space-between;}
+.ot-modal-hd h3{font-size:13px;font-weight:600;}
+.ot-modal-hd button{background:none;border:none;color:#fff;font-size:19px;cursor:pointer;line-height:1;}
+
+/* 광학 상세 팝업 */
+.ot-detail{display:none;position:fixed;background:#fff;border-radius:6px;box-shadow:0 4px 20px rgba(0,0,0,.2);width:260px;z-index:200;overflow:hidden;border-top:3px solid #5c3d9e;}
+.ot-detail.open{display:block;}
+.ot-dh{padding:9px 11px;display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1px solid #eee;}
+.ot-dh-title{font-size:13px;font-weight:700;line-height:1.4;}
+.ot-dh-sub{font-size:10px;color:var(--tm);margin-top:2px;}
+.ot-df{padding:7px 11px;border-top:1px solid #eee;display:flex;gap:6px;justify-content:flex-end;}
 </style>
 </head>
 <body>
@@ -326,71 +636,120 @@ table.gt th,table.gt td{border:1px solid var(--bl);text-align:center;vertical-al
   <div id="adminBadge" style="display:none;padding:4px 10px;background:#107c10;color:#fff;border-radius:12px;font-size:10px;font-weight:600;">👤 관리자 모드</div>
   <button class="btn-today" onclick="toggleAdminMode()" id="adminBtn">🔐 관리자</button>
   <div class="tdiv"></div>
-  <button class="btn-today" onclick="goToday()">오늘</button>
-  <div class="nav-g">
-    <button class="nav-b" onclick="changeWeek(-1)">◀</button>
-    <div class="nav-s"></div>
-    <span class="wlbl" id="weekLbl"></span>
-    <div class="nav-s"></div>
-    <button class="nav-b" onclick="changeWeek(1)">▶</button>
+
+  <!-- 예약 탭 전용 컨트롤 -->
+  <div id="topbar-reserve" style="display:flex;align-items:center;gap:10px;flex:1;">
+    <button class="btn-today" onclick="goToday()">오늘</button>
+    <div class="nav-g">
+      <button class="nav-b" onclick="changeWeek(-1)">◀</button>
+      <div class="nav-s"></div>
+      <span class="wlbl" id="weekLbl"></span>
+      <div class="nav-s"></div>
+      <button class="nav-b" onclick="changeWeek(1)">▶</button>
+    </div>
+    <div class="tsp"></div>
+    <span class="drag-hint">↕ 드래그 선택 후 예약 &nbsp;|&nbsp; 예약 클릭→복사 &nbsp;|&nbsp; 셀선택+Ctrl+V 붙여넣기 &nbsp;|&nbsp; Ctrl+Z 실행취소</span>
+    <button class="btn-new" onclick="openModal()">＋ 새 예약</button>
   </div>
-  <div class="tsp"></div>
-  <span class="drag-hint">↕ 드래그 선택 후 예약 &nbsp;|&nbsp; 예약 클릭→복사 &nbsp;|&nbsp; 셀선택+Ctrl+V 붙여넣기 &nbsp;|&nbsp; Ctrl+Z 실행취소</span>
-  <button class="btn-new" onclick="openModal()">＋ 새 예약</button>
+
+  <!-- 광학 탭 전용 컨트롤 -->
+  <div id="topbar-optics" style="display:none;align-items:center;gap:10px;flex:1;">
+    <button class="btn-today" onclick="opticsGoToday()">오늘</button>
+    <div class="nav-g" style="border-color:var(--border);">
+      <button class="nav-b" onclick="opticsChangeWeek(-1)">◀</button>
+      <div class="nav-s"></div>
+      <span class="wlbl" id="opticsWeekLblTop"></span>
+      <div class="nav-s"></div>
+      <button class="nav-b" onclick="opticsChangeWeek(1)">▶</button>
+    </div>
+    <div class="tsp"></div>
+    <span style="font-size:10px;color:var(--tm);padding:4px 8px;background:#f0ebff;border-radius:4px;">📌 2배광실 · 3배광실 전용 &nbsp;|&nbsp; 광학설계팀 배광 (월~금)</span>
+    <button class="btn-optics-new" onclick="openOpticsModal()">＋ 일정 등록</button>
+  </div>
 </div>
 
 <div class="main">
-  <div class="sidebar">
-    <div class="sb-sec">
-      <div class="sb-ttl" id="mcLbl"></div>
-      <div class="mc-grid" id="miniCal"></div>
-    </div>
-    
-    <!-- 상태 필터 추가 -->
-    <div class="sb-sec">
-      <div class="sb-ttl">승인 상태</div>
-      <div class="f-list" id="statusFilterList">
-        <label class="f-row">
-          <input type="checkbox" checked onchange="toggleStatus('pending',this)">
-          <div class="f-dot" style="background:#ffc107"></div>
-          승인 대기
-        </label>
-        <label class="f-row">
-          <input type="checkbox" checked onchange="toggleStatus('approved',this)">
-          <div class="f-dot" style="background:#107c10"></div>
-          승인 완료
-        </label>
-        <label class="f-row">
-          <input type="checkbox" checked onchange="toggleStatus('rejected',this)">
-          <div class="f-dot" style="background:#c43e1c"></div>
-          반려됨
-        </label>
-        <label class="f-row">
-          <input type="checkbox" checked onchange="toggleStatus('outofservice',this)">
-          <div class="f-dot" style="background:#999"></div>
-          미운영
-        </label>
+
+  <!-- 좌측 탭 바 -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-reserve" onclick="switchTab('reserve')">
+      <span class="tab-icon">📅</span>
+      <span class="tab-label">예약</span>
+    </button>
+    <button class="tab-btn" id="tab-optics" onclick="switchTab('optics')">
+      <span class="tab-icon">🔬</span>
+      <span class="tab-label">광학</span>
+    </button>
+  </div>
+
+  <!-- 패널 1: 기존 예약 시스템 -->
+  <div class="panel active" id="panel-reserve">
+    <div class="sidebar">
+      <div class="sb-sec">
+        <div class="sb-ttl" id="mcLbl"></div>
+        <div class="mc-grid" id="miniCal"></div>
+      </div>
+      <div class="sb-sec">
+        <div class="sb-ttl">승인 상태</div>
+        <div class="f-list" id="statusFilterList">
+          <label class="f-row">
+            <input type="checkbox" checked onchange="toggleStatus('pending',this)">
+            <div class="f-dot" style="background:#ffc107"></div>승인 대기
+          </label>
+          <label class="f-row">
+            <input type="checkbox" checked onchange="toggleStatus('approved',this)">
+            <div class="f-dot" style="background:#107c10"></div>승인 완료
+          </label>
+          <label class="f-row">
+            <input type="checkbox" checked onchange="toggleStatus('rejected',this)">
+            <div class="f-dot" style="background:#c43e1c"></div>반려됨
+          </label>
+          <label class="f-row">
+            <input type="checkbox" checked onchange="toggleStatus('outofservice',this)">
+            <div class="f-dot" style="background:#999"></div>미운영
+          </label>
+        </div>
+      </div>
+      <div class="sb-sec">
+        <div class="sb-ttl">배광실 표시</div>
+        <div class="f-list" id="filterList"></div>
+      </div>
+      <div class="sb-sec">
+        <div class="sb-ttl">이번 주 현황</div>
+        <div id="statsArea"></div>
       </div>
     </div>
-    
-    <div class="sb-sec">
-      <div class="sb-ttl">배광실 표시</div>
-      <div class="f-list" id="filterList"></div>
-    </div>
-    <div class="sb-sec">
-      <div class="sb-ttl">이번 주 현황</div>
-      <div id="statsArea"></div>
+    <div class="cal-wrap">
+      <div class="wrap">
+        <table class="gt" id="mainTable">
+          <thead id="thead"></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
-  <div class="cal-wrap">
-    <div class="wrap">
-      <table class="gt" id="mainTable">
-        <thead id="thead"></thead>
-        <tbody id="tbody"></tbody>
-      </table>
+  <!-- 패널 2: 광학 일정 -->
+  <div class="panel" id="panel-optics">
+    <div class="optics-wrap">
+      <div class="optics-toolbar">
+        <div class="optics-title">🔬 광학 배광 일정 (17:00~20:00)</div>
+        <div class="tsp"></div>
+        <button class="btn-trash" onclick="openTrashModal()" title="휴지통 (7일 보관)">
+          🗑️ 휴지통<span class="trash-badge" id="trashBadge" style="display:none;">0</span>
+        </button>
+        <button class="btn-hist" onclick="openHistModal(null)" title="전체 변경 히스토리">📋 히스토리</button>
+        <button class="btn-today" id="opticsCleanBtn" style="display:none;border-color:#c43e1c;color:#c43e1c;" onclick="clearAllOpticsData()" title="Firestore의 모든 광학 데이터 삭제">🗑️ 정리</button>
+      </div>
+      <div class="optics-table-wrap">
+        <table class="ot" id="opticsTable">
+          <thead id="optics-thead"></thead>
+          <tbody id="optics-tbody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
+
 </div>
 
 <!-- MODAL -->
@@ -464,6 +823,146 @@ table.gt th,table.gt td{border:1px solid var(--bl);text-align:center;vertical-al
     <div class="pin-buttons">
       <button class="pin-btn cancel" onclick="closePinModal()">취소</button>
       <button class="pin-btn submit" onclick="verifyPin()">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- 광학 일정 등록/수정 모달 -->
+<div class="ot-overlay" id="otOverlay">
+  <div class="ot-modal">
+    <div class="ot-modal-hd"><h3 id="otModalTitle">광학 일정 등록</h3><button onclick="closeOpticsModal()">×</button></div>
+    <div class="modal-bd">
+      <div class="slot-info" id="otSlotInfo" style="display:none"></div>
+      <div class="frow2">
+        <div class="frow"><label>배광실</label>
+          <select id="ot_room">
+            <option value="2">2배광실</option>
+            <option value="3">3배광실</option>
+          </select>
+        </div>
+        <div class="frow"><label>날짜</label><input id="ot_date" type="date"></div>
+      </div>
+      <div class="frow2">
+        <div class="frow"><label>팀</label><input id="ot_team" type="text" placeholder="예) 광학설계팀"></div>
+        <div class="frow"><label>차종</label><input id="ot_car" type="text" placeholder="예) 98QC"></div>
+      </div>
+      <div class="frow2">
+        <div class="frow"><label>담당자</label><input id="ot_manager" type="text" placeholder="예) 홍길동"></div>
+        <div class="frow"><label>수량</label><input id="ot_qty" type="text" placeholder="예) 2대분"></div>
+      </div>
+      <div class="frow"><label>목적</label><input id="ot_purpose" type="text" placeholder="예) 배광 스캔"></div>
+      <div class="frow"><label>비고</label><textarea id="ot_note" placeholder="특이사항 (선택)" style="min-height:36px;"></textarea></div>
+      <div class="frow" id="otAuthorRow">
+        <label>👤 등록자 이름</label>
+        <input id="ot_author" type="text" placeholder="이름을 입력하세요 (예: 홍길동)">
+        <div style="font-size:10px;color:#5c3d9e;margin-top:4px;padding:5px 8px;background:#f0ebff;border-radius:3px;">
+          💡 모든 등록·수정·삭제 내역은 이름과 함께 히스토리에 기록되어 누구나 확인할 수 있습니다
+        </div>
+      </div>
+      <div class="frow" id="otOutOfServiceRow" style="display:none;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="ot_outOfService" style="width:16px;height:16px;" onchange="toggleOpticsOutOfService(this)">
+          <span>🔧 미운영 (고장/재정비 등)</span>
+        </label>
+        <div style="font-size:10px;color:var(--tm);margin-top:4px;padding-left:24px;">※ 미운영으로 설정하면 해당 날짜는 일정 등록이 불가능합니다</div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-cancel" onclick="closeOpticsModal()">취소</button>
+      <button class="btn-submit" style="background:#5c3d9e;" onclick="submitOpticsEntry()">등록</button>
+    </div>
+  </div>
+</div>
+
+<!-- 광학 상세 팝업 -->
+<div class="ot-detail" id="otDetail">
+  <div class="ot-dh">
+    <div style="flex:1;min-width:0;">
+      <div class="ot-dh-title" id="otd-title"></div>
+      <div class="ot-dh-sub" id="otd-sub"></div>
+    </div>
+    <div class="dh-actions">
+      <button class="dh-btn" title="닫기" onclick="closeOtDetail()">✕</button>
+    </div>
+  </div>
+  <div class="db" id="otd-body"></div>
+  <div class="ot-df" id="otd-footer"></div>
+</div>
+
+<!-- 휴지통 모달 -->
+<div class="trash-overlay" id="trashOverlay">
+  <div class="trash-modal">
+    <div class="trash-hd">
+      <h3>🗑️ 광학 일정 휴지통 <span style="font-size:10px;font-weight:400;opacity:.85;">(삭제 후 7일간 복구 가능)</span></h3>
+      <button onclick="closeTrashModal()">×</button>
+    </div>
+    <div class="trash-bd" id="trashBody"></div>
+    <div class="trash-ft">
+      <span class="trash-info-text" id="trashInfoText">7일이 경과한 항목은 자동으로 영구 삭제됩니다</span>
+      <button class="btn-cancel" onclick="closeTrashModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- PIN 본인 확인 모달 -->
+<!-- 삭제자 이름 확인 모달 -->
+<div class="del-confirm-overlay" id="delConfirmOverlay">
+  <div class="del-confirm-box">
+    <div class="del-confirm-title">🗑️ 일정 삭제</div>
+    <div class="del-confirm-info" id="delConfirmInfo"></div>
+    <div class="del-confirm-label">삭제자 성명</div>
+    <input type="text" class="del-confirm-input" id="delConfirmName" placeholder="성명을 입력하세요" autocomplete="off">
+    <div class="del-confirm-hint">💡 삭제 이력에 성명이 기록되며 누구나 확인할 수 있습니다</div>
+    <div class="del-confirm-buttons">
+      <button class="del-confirm-btn-cancel" onclick="closeDelConfirm()">취소</button>
+      <button class="del-confirm-btn-ok" onclick="confirmDelAction()">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- 날짜 전체 블락 모달 -->
+<div class="block-overlay" id="blockOverlay">
+  <div class="block-modal">
+    <div class="block-modal-hd"><h3 id="blockModalTitle">🚫 하루 전체 블락</h3><button onclick="closeBlockModal()">×</button></div>
+    <div class="modal-bd">
+      <div class="slot-info" id="blockDateInfo"></div>
+      <div class="frow">
+        <label>휴무 사유</label>
+        <input id="blockReason" type="text" placeholder="예) 어린이날, 창립기념일, 권장연차...">
+        <div class="block-preset">
+          <span style="font-size:10px;color:var(--tm);width:100%;margin-bottom:2px;">빠른 선택:</span>
+          <button class="block-preset-btn holiday" onclick="setBlockReason('어린이날')">어린이날</button>
+          <button class="block-preset-btn holiday" onclick="setBlockReason('추석')">추석</button>
+          <button class="block-preset-btn holiday" onclick="setBlockReason('설날')">설날</button>
+          <button class="block-preset-btn holiday" onclick="setBlockReason('광복절')">광복절</button>
+          <button class="block-preset-btn holiday" onclick="setBlockReason('개천절')">개천절</button>
+          <button class="block-preset-btn holiday" onclick="setBlockReason('한글날')">한글날</button>
+          <button class="block-preset-btn holiday" onclick="setBlockReason('대체휴무')">대체휴무</button>
+          <button class="block-preset-btn company" onclick="setBlockReason('창립기념일')">창립기념일</button>
+          <button class="block-preset-btn company" onclick="setBlockReason('권장연차')">권장연차</button>
+          <button class="block-preset-btn company" onclick="setBlockReason('공장점검일')">공장점검일</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button id="blockRemoveBtn" class="btn-cancel" style="color:#c43e1c;border-color:#c43e1c;display:none;" onclick="removeBlock()">블락 해제</button>
+      <button class="btn-cancel" onclick="closeBlockModal()">취소</button>
+      <button class="btn-submit" style="background:#8b1a1a;" onclick="submitBlock()">블락 설정</button>
+    </div>
+  </div>
+</div>
+
+<!-- 히스토리 모달 -->
+<div class="hist-overlay" id="histOverlay">
+  <div class="hist-modal">
+    <div class="hist-hd">
+      <h3>📋 변경 히스토리 <span id="histTargetLabel" style="font-size:11px;font-weight:400;opacity:.85;"></span></h3>
+      <button onclick="closeHistModal()">×</button>
+    </div>
+    <div class="hist-bd" id="histBody"></div>
+    <div class="hist-ft">
+      <span style="font-size:10px;color:var(--tm);">모든 등록·수정·삭제 내역이 기록됩니다</span>
+      <button class="btn-cancel" onclick="closeHistModal()">닫기</button>
     </div>
   </div>
 </div>
@@ -546,6 +1045,7 @@ const NIGHT_END_TO_RI={'21:00':0,'22:00':1,'23:00':2,'24:00':3,'02:00':4,'03:00'
 
 let currentMonday=getMonday(new Date());
 let events=[];
+let dayBlocks={};  // { 'YYYY-MM-DD': { reason, blockedAt, blockedBy } }
 let visibleRooms=new Set([1,2,3,4,5,6]);
 let visibleStatuses=new Set(['pending','approved','rejected','outofservice']); // 상태 필터
 let selectedId=null,editingId=null;
@@ -562,14 +1062,15 @@ const ADMIN_PIN = '5125'; // 관리자 PIN
 
 function toggleAdminMode() {
   if (isAdminMode) {
-    // 관리자 모드 해제
     isAdminMode = false;
     document.getElementById('adminBadge').style.display = 'none';
     document.getElementById('adminBtn').textContent = '🔐 관리자';
+    const cleanBtn = document.getElementById('opticsCleanBtn');
+    if (cleanBtn) cleanBtn.style.display = 'none';
     showToast('👋 관리자 모드 해제됨');
-    closeDetail(); // 상세 팝업 닫기
+    closeDetail();
+    render(); // 날짜 헤더 클릭 이벤트 제거
   } else {
-    // 관리자 모드 진입 시도
     openPinModal();
   }
 }
@@ -598,7 +1099,10 @@ function verifyPin() {
     isAdminMode = true;
     document.getElementById('adminBadge').style.display = 'block';
     document.getElementById('adminBtn').textContent = '🚪 로그아웃';
+    const cleanBtn = document.getElementById('opticsCleanBtn');
+    if (cleanBtn) cleanBtn.style.display = 'inline-block';
     closePinModal();
+    render(); // 날짜 헤더에 클릭 이벤트 즉시 부착
     showToast('✅ 관리자 모드 활성화');
   } else {
     errorEl.textContent = '❌ PIN이 올바르지 않습니다';
@@ -745,23 +1249,48 @@ function setupFirestoreListener() {
       isFirestoreReady = true;
       return;
     }
-    
     events = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
-      events.push({
-        id: doc.id,
-        ...data,
-        status: data.status || 'pending'
-      });
+      events.push({ id: doc.id, ...data, status: data.status || 'pending' });
     });
-    
     buildTable();
     renderStats();
-    console.log('🔄 실시간 업데이트: 다른 사용자가 데이터 수정');
-    
   }, (error) => {
     console.error('❌ Firestore 리스너 오류:', error);
+  });
+}
+
+// ── dayBlocks Firestore CRUD ──
+async function loadDayBlocksFromFirestore() {
+  try {
+    const { db, collection, getDocs } = window.firestoreDB;
+    const snap = await getDocs(collection(db, 'dayBlocks'));
+    dayBlocks = {};
+    snap.forEach(d => { dayBlocks[d.id] = d.data(); });
+  } catch(e) { console.error('dayBlocks 로드 오류:', e); }
+}
+
+async function saveDayBlock(dateStr, reason) {
+  const { db, doc, setDoc } = window.firestoreDB;
+  const data = { reason, blockedAt: Date.now(), blockedBy: '관리자' };
+  await setDoc(doc(db, 'dayBlocks', dateStr), data);
+  dayBlocks[dateStr] = data;
+}
+
+async function deleteDayBlock(dateStr) {
+  const { db, doc, deleteDoc } = window.firestoreDB;
+  await deleteDoc(doc(db, 'dayBlocks', dateStr));
+  delete dayBlocks[dateStr];
+}
+
+function setupDayBlocksListener() {
+  const { db, collection, onSnapshot } = window.firestoreDB;
+  onSnapshot(collection(db, 'dayBlocks'), snap => {
+    dayBlocks = {};
+    snap.forEach(d => { dayBlocks[d.id] = d.data(); });
+    buildTable();
+    renderMiniCal();
   });
 }
 
@@ -897,7 +1426,24 @@ function buildTable(){
   th=document.createElement('th');th.className='th-corner';th.rowSpan=2;th.style.minWidth='80px';tr1.appendChild(th);
   th=document.createElement('th');th.className='th-corner';th.rowSpan=2;th.style.width='28px';tr1.appendChild(th);
   th=document.createElement('th');th.className='th-corner';th.rowSpan=2;th.style.minWidth='88px';tr1.appendChild(th);
-  days.forEach(d=>{const isT=fmtDate(d)===todayStr;th=document.createElement('th');th.colSpan=2;th.className='th-date'+(isT?' today-col':'');th.textContent=`${d.getDate()}(${DAYS_KO[d.getDay()]})`;tr1.appendChild(th);});
+  days.forEach(d=>{
+    const isT=fmtDate(d)===todayStr;
+    const dateStr=fmtDate(d);
+    const block=dayBlocks[dateStr];
+    th=document.createElement('th');
+    th.colSpan=2;
+    th.className='th-date'+(isT?' today-col':'')+(block?' blocked-col':'')+(isAdminMode?' admin-hoverable':'');
+    if(block){
+      th.innerHTML=`${d.getDate()}(${DAYS_KO[d.getDay()]}) <span style="font-size:10px;font-weight:400;">— ${block.reason}</span>`;
+    } else {
+      th.textContent=`${d.getDate()}(${DAYS_KO[d.getDay()]})`;
+    }
+    if(isAdminMode){
+      th.title = block ? `클릭: 블락 해제/수정 (${block.reason})` : '클릭: 하루 전체 블락';
+      th.addEventListener('click', ()=>openBlockModal(dateStr));
+    }
+    tr1.appendChild(th);
+  });
   thead.appendChild(tr1);
   const tr2=document.createElement('tr');
   days.forEach(d=>{const isT=fmtDate(d)===todayStr;th=document.createElement('th');th.className='th-shift-day';th.textContent='주간';if(isT)th.style.background='#ffe8a0';tr2.appendChild(th);th=document.createElement('th');th.className='th-shift-night';th.textContent='야간';if(isT)th.style.background='#d4e4ff';tr2.appendChild(th);});
@@ -930,6 +1476,8 @@ function buildTable(){
       const tdT=document.createElement('td');tdT.className='td-time'+(isFirstPM?' pm':'');tdT.innerHTML=`<span class="td">${rowDef.dTime}</span><br><span class="tn">(${rowDef.nTime})</span>`;tr.appendChild(tdT);
       days.forEach(d=>{
         const dateStr=fmtDate(d);const isToday=dateStr===todayStr;
+        const dayBlock=dayBlocks[dateStr]; // 하루 블락 여부
+
         ['day','night'].forEach(shift=>{
           const isNight=shift==='night';const evList=evMap[`${dateStr}-${shift}`]||[];
           const coveringEv=evList.find(ev=>{const{startRi:s,endRi:e}=evToRi(ev);return rowIdx>s&&rowIdx<=e;});
@@ -938,7 +1486,28 @@ function buildTable(){
           const td=document.createElement('td');td.className='td-slot'+(isFirstPM?' pm':'')+(isNight?' night-col':'');
           const bgDay=isToday?mix(room.rowBg,'#cce8ff',.28):room.rowBg;const bgNight=isToday?mix(room.rowBg,'#ccd8ff',.35):mix(room.rowBg,'#eaeeff',.5);
           td.style.background=isNight?bgNight:bgDay;td.dataset.room=room.id;td.dataset.date=dateStr;td.dataset.shift=shift;td.dataset.ri=rowIdx;
-          if(startingEv){
+
+          // 하루 전체 블락 처리
+          if(dayBlock){
+            td.classList.add('day-blocked');
+            // 각 배광실+shift의 첫 행(rowIdx===0)에 세로 사유 레이블 표시
+            if(rowIdx===0){
+              td.rowSpan=8;
+              td.style.verticalAlign='middle';
+              td.style.position='relative';
+              const lbl=document.createElement('div');
+              lbl.className='day-block-label';
+              lbl.textContent=dayBlock.reason;
+              td.appendChild(lbl);
+              // 관리자는 클릭 시 블락 모달 오픈
+              if(isAdminMode){
+                td.style.cursor='pointer';
+                td.addEventListener('click',()=>openBlockModal(dateStr));
+              }
+            } else {
+              return; // rowSpan=8이므로 나머지 행은 건너뜀
+            }
+          } else if(startingEv){
             const{startRi:eStart,endRi:eEnd}=evToRi(startingEv);const span=eEnd-eStart+1;if(span>1)td.rowSpan=span;td.style.verticalAlign='top';
             const rowH=30;const crossesMidDay=(startingEv.shift==='day'&&eStart<=3&&eEnd>=4);const extraPx=crossesMidDay?1:0;
             const block=document.createElement('div');
@@ -1216,13 +1785,47 @@ function moveKey(dRi,dCol,shiftKey){
   const targetEl=document.querySelector(`.td-slot[data-room="${cursor.room}"][data-date="${cursor.date}"][data-shift="${cursor.shift}"][data-ri="${cursor.ri}"]`);if(targetEl)targetEl.scrollIntoView({block:'nearest',inline:'nearest'});
 }
 document.addEventListener('keydown',e=>{
-  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){if(!selection&&!cursor)return;e.preventDefault();const dMap={ArrowUp:{ri:-1,col:0},ArrowDown:{ri:1,col:0},ArrowLeft:{ri:0,col:-1},ArrowRight:{ri:0,col:1}};const{ri,col}=dMap[e.key];moveKey(ri,col,e.shiftKey);return;}
-  if(e.key==='Enter'&&selection){e.preventDefault();openFromSelection();cursor=null;applyCursor();return;}
-  if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undo();return;}
-  if((e.ctrlKey||e.metaKey)&&e.key==='c'){if(selectedId){e.preventDefault();copySelectedEvent();}return;}
-  if((e.ctrlKey||e.metaKey)&&e.key==='v'){e.preventDefault();pasteToSelection();return;}
-  if((e.key==='Delete'||e.key==='Backspace')&&selectedId){e.preventDefault();deleteEvent();return;}
-  if(e.key==='Escape'){deselectBlock();exitPasteMode();clearSelection();cursor=null;applyCursor();closeDetail();}
+  // 입력 필드에 포커스가 있으면 단축키 무시 (Delete, Backspace 등 텍스트 편집용)
+  const ae = document.activeElement;
+  const isTyping = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT' || ae.isContentEditable);
+
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){if(isTyping)return;if(!selection&&!cursor)return;e.preventDefault();const dMap={ArrowUp:{ri:-1,col:0},ArrowDown:{ri:1,col:0},ArrowLeft:{ri:0,col:-1},ArrowRight:{ri:0,col:1}};const{ri,col}=dMap[e.key];moveKey(ri,col,e.shiftKey);return;}
+  if(e.key==='Enter'&&selection&&!isTyping){e.preventDefault();openFromSelection();cursor=null;applyCursor();return;}
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'){if(isTyping)return;e.preventDefault();undo();return;}
+  if((e.ctrlKey||e.metaKey)&&e.key==='c'){if(isTyping)return;if(selectedId){e.preventDefault();copySelectedEvent();}return;}
+  if((e.ctrlKey||e.metaKey)&&e.key==='v'){if(isTyping)return;e.preventDefault();pasteToSelection();return;}
+  if((e.key==='Delete'||e.key==='Backspace')&&!isTyping){
+    // 광학 탭이 활성화되어 있고 광학 일정이 선택된 경우
+    const opticsActive = document.getElementById('panel-optics').classList.contains('active');
+    if (opticsActive && opticsSelectedId) {
+      e.preventDefault();
+      const entry = opticsEntries.find(en => en.id === opticsSelectedId);
+      if (!entry) return;
+      // 미운영: 관리자만 삭제 가능
+      if (entry.status === 'outofservice') {
+        if (isAdminMode) {
+          deleteOpticsEntry(opticsSelectedId);
+        } else {
+          showToast('⚠️ 미운영 일정은 관리자만 삭제할 수 있습니다');
+        }
+      } else {
+        // 일반 일정: 관리자는 영구 삭제, 일반 사용자는 PIN 본인 확인 후 휴지통 이동
+        if (isAdminMode) {
+          deleteOpticsEntry(opticsSelectedId);
+        } else {
+          requestDeleteOpticsEntry(opticsSelectedId);
+        }
+      }
+      return;
+    }
+    // 일반 예약 탭
+    if (selectedId) { e.preventDefault(); deleteEvent(); return; }
+  }
+  if(e.key==='Escape'){
+    if(isTyping)return;
+    deselectBlock();exitPasteMode();clearSelection();cursor=null;applyCursor();closeDetail();
+    closeOtDetail();
+  }
 });
 function updateCursorFromTd(td){cursor={room:parseInt(td.dataset.room),date:td.dataset.date,shift:td.dataset.shift,ri:parseInt(td.dataset.ri)};applyCursor();}
 document.addEventListener('mouseup',()=>{if(drag&&drag.active)clearDrag();});
@@ -1237,7 +1840,16 @@ function renderMiniCalAt(y,m){
   lbl.innerHTML='<button onclick="miniCalMove(-1)" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--ts);padding:0 2px;">◀</button><span style="font-size:10px;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.6px;">'+y+'년 '+(m+1)+'월</span><button onclick="miniCalMove(1)" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--ts);padding:0 2px;">▶</button>';
   let html=DAYS_KO.map(d=>'<div class="mc-dow">'+d+'</div>').join('');
   for(let i=0;i<first;i++)html+='<div class="mc-day empty"></div>';
-  for(let d=1;d<=total;d++){const dateStr=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');const it=y===today.getFullYear()&&m===today.getMonth()&&d===today.getDate();const iw=wd.includes(dateStr);html+='<div class="'+'mc-day'+(it?' today':iw?' in-week':'')+'" style="cursor:pointer;" onclick="jumpToDate('+y+','+m+','+d+')">'+d+'</div>';}
+  for(let d=1;d<=total;d++){
+    const dateStr=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const it=y===today.getFullYear()&&m===today.getMonth()&&d===today.getDate();
+    const iw=wd.includes(dateStr);
+    const isBlocked=!!dayBlocks[dateStr];
+    const cls='mc-day'+(it?' today':iw?' in-week':'')+(isBlocked?' mc-blocked':'');
+    const style=isBlocked?'cursor:pointer;background:#f5d5d5;color:#8b1a1a;border-radius:3px;':'cursor:pointer;';
+    const title=isBlocked?` title="${dayBlocks[dateStr].reason}"` :'';
+    html+=`<div class="${cls}" style="${style}"${title} onclick="jumpToDate(${y},${m},${d})">${d}${isBlocked?'<span style="font-size:6px;vertical-align:super;">🚫</span>':''}</div>`;
+  }
   document.getElementById('miniCal').innerHTML=html;
 }
 function jumpToDate(y,m,d){currentMonday=getMonday(new Date(y,m,d));miniCalOffset=0;render();}
@@ -1306,6 +1918,12 @@ async function submitReservation(){
   
   if(!isOutOfService && (!title||!date)){alert('필수 항목을 입력하세요.');return;}
   if(!editingId && !isOutOfService && (!dept||!manager)){alert('의뢰 부서와 담당자를 입력하세요.');return;}
+
+  // 하루 블락된 날 예약 차단 (관리자 + 미운영은 허용)
+  if(!isAdminMode && !isOutOfService && dayBlocks[date]){
+    alert(`⚠️ ${date}은(는) 블락된 날입니다.\n사유: ${dayBlocks[date].reason}\n\n해당 날에는 예약이 불가합니다.`);
+    return;
+  }
   
   const sMap=shift==='day'?DAY_START_TO_RI:NIGHT_START_TO_RI;const eMap=shift==='day'?DAY_END_TO_RI:NIGHT_END_TO_RI;const newS=sMap[startTime]??0,newE=eMap[endTime]??0;
   const conflict=events.filter(e=>{
@@ -1612,9 +2230,1056 @@ async function deleteEvent(){
 function editEvent(){const id=selectedId;closeDetail();openEditModal(id);}
 document.addEventListener('click',e=>{const p=document.getElementById('detailPopup');if(p.classList.contains('open')&&!p.contains(e.target))closeDetail();});
 
+// ══════════════════════════════════════════════════════════════
+// 🚫 날짜 전체 블락 모달
+// ══════════════════════════════════════════════════════════════
+
+let _blockTargetDate = null;
+
+function openBlockModal(dateStr) {
+  if (!isAdminMode) return;
+  _blockTargetDate = dateStr;
+  const block = dayBlocks[dateStr];
+  const d = new Date(dateStr);
+  const label = `${d.getMonth()+1}/${d.getDate()}(${DAYS_KO[d.getDay()]})`;
+
+  document.getElementById('blockModalTitle').textContent = block
+    ? `🚫 블락 수정 — ${label}`
+    : `🚫 하루 전체 블락 — ${label}`;
+  document.getElementById('blockDateInfo').textContent =
+    `📅 ${dateStr}  |  ${block ? `현재 사유: ${block.reason}` : '블락되지 않은 날'}`;
+  document.getElementById('blockReason').value = block ? block.reason : '';
+
+  // 이미 블락된 날이면 "블락 해제" 버튼 표시
+  document.getElementById('blockRemoveBtn').style.display = block ? 'inline-block' : 'none';
+
+  document.getElementById('blockOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('blockReason').focus(), 100);
+}
+
+function closeBlockModal() {
+  document.getElementById('blockOverlay').classList.remove('open');
+  _blockTargetDate = null;
+}
+
+function setBlockReason(reason) {
+  document.getElementById('blockReason').value = reason;
+  document.getElementById('blockReason').focus();
+}
+
+async function submitBlock() {
+  const reason = document.getElementById('blockReason').value.trim();
+  if (!reason) {
+    alert('휴무 사유를 입력하세요.');
+    document.getElementById('blockReason').focus();
+    return;
+  }
+  await saveDayBlock(_blockTargetDate, reason);
+  closeBlockModal();
+  buildTable();
+  renderMiniCal();
+  showToast(`🚫 ${_blockTargetDate} 블락 설정 — ${reason}`);
+}
+
+async function removeBlock() {
+  if (!confirm(`${_blockTargetDate} 블락을 해제하시겠습니까?`)) return;
+  const dateStr = _blockTargetDate;
+  await deleteDayBlock(dateStr);
+  closeBlockModal();
+  buildTable();
+  renderMiniCal();
+  showToast(`✅ ${dateStr} 블락 해제됨`);
+}
+
 function render(){document.getElementById('weekLbl').textContent=curWeekLabel();buildTable();renderMiniCal();renderFilters();renderStats();}
 function changeWeek(dir){currentMonday.setDate(currentMonday.getDate()+dir*7);render();}
 function goToday(){currentMonday=getMonday(new Date());render();}
+
+// ══════════════════════════════════════════════════════════════
+// 🔬 탭 전환
+// ══════════════════════════════════════════════════════════════
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+
+  // topbar 컨트롤 전환
+  const reserveBar = document.getElementById('topbar-reserve');
+  const opticsBar  = document.getElementById('topbar-optics');
+  if (tab === 'optics') {
+    reserveBar.style.display = 'none';
+    opticsBar.style.display  = 'flex';
+    opticsRender();
+  } else {
+    reserveBar.style.display = 'flex';
+    opticsBar.style.display  = 'none';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// 🔬 광학 일정 탭
+// ══════════════════════════════════════════════════════════════
+
+const OPTICS_ROOMS = [
+  { id: 2, name: '2배광실', color: '#0e6b0e', bg: '#c8e6c8' },
+  { id: 3, name: '3배광실', color: '#b03018', bg: '#f5cec8' },
+];
+const OPTICS_TIME = '17:00~20:00';
+const DAYS_KO2 = ['일','월','화','수','목','금','토'];
+
+let opticsMonday = getMonday(new Date());
+let opticsEntries = []; // Firestore 'opticsEntries' 컬렉션
+let opticsTrash = [];   // Firestore 'opticsTrash' 컬렉션 (7일 보관)
+let opticsEditingId = null;
+let opticsSelectedId = null;
+
+// ── 등록자 이름 localStorage 자동 완성 ──
+const AUTHOR_KEY = 'optics_last_author';
+function saveAuthorName(name) {
+  try { if (name) localStorage.setItem(AUTHOR_KEY, name); } catch(e) {}
+}
+function loadAuthorName() {
+  try { return localStorage.getItem(AUTHOR_KEY) || ''; } catch(e) { return ''; }
+}
+
+// ── 히스토리 타임스탬프 포맷 ──
+function fmtHistDate(ts) {
+  const d = new Date(ts);
+  return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+// ── 휴지통 만료(7일) 체크 ──
+const TRASH_RETENTION_MS = 7 * 24 * 60 * 60 * 1000; // 7일
+function isExpired(deletedAt) {
+  return (Date.now() - deletedAt) >= TRASH_RETENTION_MS;
+}
+function fmtTrashDate(ts) { return fmtHistDate(ts); }
+function daysLeft(deletedAt) {
+  const remain = TRASH_RETENTION_MS - (Date.now() - deletedAt);
+  if (remain <= 0) return 0;
+  return Math.ceil(remain / (24 * 60 * 60 * 1000));
+}
+
+// Firestore CRUD - 광학
+async function loadOpticsFromFirestore() {
+  try {
+    const { db, collection, getDocs } = window.firestoreDB;
+    const col = collection(db, 'opticsEntries');
+    const snap = await getDocs(col);
+    opticsEntries = [];
+    snap.forEach(doc => {
+      const data = doc.data();
+      opticsEntries.push({
+        id: doc.id,
+        ...data,
+        room: Number(data.room) // 항상 Number로 통일
+      });
+    });
+  } catch(e) {
+    console.error('광학 데이터 로드 오류:', e);
+  }
+}
+
+async function saveOpticsToFirestore(entry) {
+  const { db, doc, setDoc } = window.firestoreDB;
+  await setDoc(doc(db, 'opticsEntries', entry.id), entry);
+}
+
+async function updateOpticsInFirestore(entry) {
+  const { db, doc, updateDoc } = window.firestoreDB;
+  const { id, ...data } = entry;
+  await updateDoc(doc(db, 'opticsEntries', id), data);
+}
+
+async function deleteOpticsFromFirestore(id) {
+  const { db, doc, deleteDoc } = window.firestoreDB;
+  await deleteDoc(doc(db, 'opticsEntries', id));
+}
+
+// ── 휴지통 Firestore CRUD ──
+async function loadTrashFromFirestore() {
+  try {
+    const { db, collection, getDocs } = window.firestoreDB;
+    const col = collection(db, 'opticsTrash');
+    const snap = await getDocs(col);
+    opticsTrash = [];
+    snap.forEach(doc => {
+      const data = doc.data();
+      opticsTrash.push({
+        id: doc.id,
+        ...data,
+        room: Number(data.room)
+      });
+    });
+    // 7일 경과 항목 자동 영구 삭제
+    await purgeExpiredTrash();
+    updateTrashBadge();
+  } catch(e) {
+    console.error('휴지통 로드 오류:', e);
+  }
+}
+
+// Firestore에 저장하기 전 undefined 필드 제거 (Firestore는 undefined 거부)
+function sanitizeForFirestore(obj) {
+  const cleaned = {};
+  for (const k in obj) {
+    const v = obj[k];
+    if (v === undefined) continue; // undefined 필드는 제외
+    cleaned[k] = v;
+  }
+  return cleaned;
+}
+
+async function moveToTrash(entry, deletedBy) {
+  console.log('[moveToTrash] 시작', { entryId: entry.id, deletedBy });
+  const { db, doc, setDoc, deleteDoc } = window.firestoreDB;
+  if (!db) {
+    throw new Error('Firestore가 초기화되지 않았습니다');
+  }
+  const trashEntry = sanitizeForFirestore({
+    ...entry,
+    deletedAt: Date.now(),
+    deletedBy: deletedBy || '익명',
+    originalId: entry.id
+  });
+  console.log('[moveToTrash] 휴지통에 저장할 데이터:', trashEntry);
+  // 휴지통에 추가
+  await setDoc(doc(db, 'opticsTrash', entry.id), trashEntry);
+  console.log('[moveToTrash] 휴지통 저장 완료, 원본 삭제 시작');
+  // 원본 삭제
+  await deleteDoc(doc(db, 'opticsEntries', entry.id));
+  console.log('[moveToTrash] 원본 삭제 완료');
+}
+
+async function restoreFromTrash(id) {
+  const { db, doc, setDoc, deleteDoc } = window.firestoreDB;
+  const trashItem = opticsTrash.find(t => t.id === id);
+  if (!trashItem) return;
+
+  const conflict = opticsEntries.find(e => Number(e.room) === Number(trashItem.room) && e.date === trashItem.date);
+  if (conflict) {
+    alert(`복구할 수 없습니다.\n\n해당 날짜(${trashItem.date}, ${trashItem.room}배광실)에 이미 다른 일정이 등록되어 있습니다.`);
+    return;
+  }
+
+  const { deletedAt, deletedBy, originalId, ...cleanEntry } = trashItem;
+  await setDoc(doc(db, 'opticsEntries', cleanEntry.id), cleanEntry);
+  await deleteDoc(doc(db, 'opticsTrash', id));
+  // 히스토리: 복구
+  await addHistory({ action:'restore', entryId:cleanEntry.id, room:cleanEntry.room, date:cleanEntry.date, author:'관리자', after:cleanEntry });
+  showToast(`✅ 복구됨: ${cleanEntry.team || cleanEntry.date}`);
+}
+
+async function permanentDeleteFromTrash(id) {
+  const { db, doc, deleteDoc } = window.firestoreDB;
+  await deleteDoc(doc(db, 'opticsTrash', id));
+}
+
+async function purgeExpiredTrash() {
+  const expired = opticsTrash.filter(t => isExpired(t.deletedAt));
+  for (const item of expired) {
+    await permanentDeleteFromTrash(item.id);
+  }
+  opticsTrash = opticsTrash.filter(t => !isExpired(t.deletedAt));
+}
+
+function setupTrashListener() {
+  const { db, collection, onSnapshot } = window.firestoreDB;
+  onSnapshot(collection(db, 'opticsTrash'), snap => {
+    opticsTrash = [];
+    snap.forEach(doc => {
+      const data = doc.data();
+      opticsTrash.push({
+        id: doc.id,
+        ...data,
+        room: Number(data.room)
+      });
+    });
+    updateTrashBadge();
+    // 휴지통 모달이 열려있으면 갱신
+    if (document.getElementById('trashOverlay').classList.contains('open')) {
+      renderTrashList();
+    }
+  });
+}
+
+function updateTrashBadge() {
+  const badge = document.getElementById('trashBadge');
+  if (!badge) return;
+  const validTrash = opticsTrash.filter(t => !isExpired(t.deletedAt));
+  if (validTrash.length > 0) {
+    badge.style.display = 'flex';
+    badge.textContent = validTrash.length;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// 📋 히스토리 시스템
+// ══════════════════════════════════════════════════════════════
+
+let opticsHistory = []; // Firestore 'opticsHistory' 컬렉션
+
+async function loadHistoryFromFirestore() {
+  try {
+    const { db, collection, getDocs } = window.firestoreDB;
+    const snap = await getDocs(collection(db, 'opticsHistory'));
+    opticsHistory = [];
+    snap.forEach(d => opticsHistory.push({ id: d.id, ...d.data() }));
+    opticsHistory.sort((a, b) => b.ts - a.ts);
+  } catch(e) { console.error('히스토리 로드 오류:', e); }
+}
+
+async function addHistory({ action, entryId, room, date, author, before, after }) {
+  try {
+    const { db, collection, addDoc } = window.firestoreDB;
+    const rec = sanitizeForFirestore({
+      action,
+      entryId,
+      room: Number(room),
+      date,
+      author: author || '(미지정)',
+      ts: Date.now(),
+      before: before ? sanitizeForFirestore(before) : null,
+      after:  after  ? sanitizeForFirestore(after)  : null,
+    });
+    const ref = await addDoc(collection(db, 'opticsHistory'), rec);
+    opticsHistory.unshift({ id: ref.id, ...rec });
+  } catch(e) { console.error('히스토리 저장 오류:', e); }
+}
+
+function setupHistoryListener() {
+  const { db, collection, onSnapshot } = window.firestoreDB;
+  onSnapshot(collection(db, 'opticsHistory'), snap => {
+    opticsHistory = [];
+    snap.forEach(d => opticsHistory.push({ id: d.id, ...d.data() }));
+    opticsHistory.sort((a, b) => b.ts - a.ts);
+  });
+}
+
+// 두 엔트리 간 변경 사항 추출 (수정 전/후 비교)
+function diffEntries(before, after) {
+  const LABELS = { team:'팀', car:'차종', manager:'담당자', qty:'수량', purpose:'목적', note:'비고', date:'날짜', room:'배광실', status:'상태' };
+  const keys = Object.keys(LABELS);
+  const changes = [];
+  for (const k of keys) {
+    const bv = (before?.[k] ?? '').toString();
+    const av = (after?.[k]  ?? '').toString();
+    if (bv !== av) {
+      changes.push({ label: LABELS[k], old: bv || '(없음)', new: av || '(없음)' });
+    }
+  }
+  return changes;
+}
+
+// 히스토리 모달
+function openHistModal(filterEntryId) {
+  const overlay = document.getElementById('histOverlay');
+  const label = document.getElementById('histTargetLabel');
+  if (filterEntryId) {
+    const entry = opticsEntries.find(e => e.id === filterEntryId)
+                  || opticsTrash.find(e => e.id === filterEntryId);
+    const room = entry ? OPTICS_ROOMS.find(r => r.id === Number(entry.room)) : null;
+    label.textContent = entry ? `— ${room?.name || ''} ${entry.date}` : '';
+  } else {
+    label.textContent = '— 전체';
+  }
+  overlay.classList.add('open');
+  renderHistList(filterEntryId);
+}
+
+function closeHistModal() {
+  document.getElementById('histOverlay').classList.remove('open');
+}
+
+function renderHistList(filterEntryId) {
+  const body = document.getElementById('histBody');
+  let list = filterEntryId
+    ? opticsHistory.filter(h => h.entryId === filterEntryId)
+    : opticsHistory;
+
+  if (list.length === 0) {
+    body.innerHTML = `<div class="hist-empty">📋 기록된 히스토리가 없습니다</div>`;
+    return;
+  }
+
+  const ROOM_NAMES = { 2: '2배광실', 3: '3배광실' };
+  const ACTION_META = {
+    create:  { icon:'✅', label:'등록',   cls:'create' },
+    edit:    { icon:'✏️', label:'수정',   cls:'edit'   },
+    delete:  { icon:'🗑️', label:'삭제',   cls:'delete' },
+    restore: { icon:'♻️', label:'복구',   cls:'restore'},
+  };
+
+  body.innerHTML = `<div class="hist-list">${list.map(h => {
+    const meta = ACTION_META[h.action] || { icon:'❓', label:h.action, cls:'edit' };
+    const roomName = ROOM_NAMES[h.room] || `${h.room}배광실`;
+    const changes = (h.action === 'edit' && h.before && h.after) ? diffEntries(h.before, h.after) : [];
+    const diffHtml = changes.length > 0
+      ? `<div class="hist-diff">${changes.map(c =>
+          `<div>📌 ${c.label}: <span class="diff-old">${c.old}</span> → <span class="diff-new">${c.new}</span></div>`
+        ).join('')}</div>`
+      : '';
+    const snapshot = h.action === 'delete' && h.before
+      ? `<div class="hist-diff">삭제된 일정: ${h.before.team || '(팀 미지정)'} / ${h.before.manager || ''} ${h.before.purpose || ''}</div>`
+      : '';
+
+    return `<div class="hist-item">
+      <div class="hist-icon">${meta.icon}</div>
+      <div class="hist-info">
+        <div class="hist-action ${meta.cls}">${meta.label}</div>
+        <div class="hist-meta">
+          <b>${roomName}</b> · ${h.date}
+          &nbsp;|&nbsp; 작업자: <b>${h.author}</b>
+          &nbsp;|&nbsp; ${fmtHistDate(h.ts)}
+        </div>
+        ${diffHtml}${snapshot}
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+// 실시간 리스너 - 광학
+function setupOpticsListener() {
+  const { db, collection, onSnapshot } = window.firestoreDB;
+  onSnapshot(collection(db, 'opticsEntries'), snap => {
+    opticsEntries = [];
+    snap.forEach(doc => {
+      const data = doc.data();
+      opticsEntries.push({
+        id: doc.id,
+        ...data,
+        room: Number(data.room) // 항상 Number로 통일
+      });
+    });
+    if (document.getElementById('panel-optics').classList.contains('active')) {
+      buildOpticsTable();
+    }
+  });
+}
+
+// 광학 주간 날짜 (월~금)
+function getOpticsWeekdays() {
+  return Array.from({ length: 5 }, (_, i) => {
+    const d = new Date(opticsMonday);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+}
+
+function opticsWeekLabel() {
+  return `${opticsMonday.getMonth()+1}월 ${getWeekNum(opticsMonday)}주`;
+}
+
+// 광학 테이블 렌더
+function buildOpticsTable() {
+  const days = getOpticsWeekdays();
+  const todayStr = fmtDate(new Date());
+  const thead = document.getElementById('optics-thead');
+  const tbody = document.getElementById('optics-tbody');
+  thead.innerHTML = ''; tbody.innerHTML = '';
+
+  // 헤더
+  const tr = document.createElement('tr');
+  let th = document.createElement('th');
+  th.className = 'ot-th-corner';
+  th.textContent = '대상장비';
+  th.rowSpan = 1;
+  tr.appendChild(th);
+
+  days.forEach(d => {
+    const isT = fmtDate(d) === todayStr;
+    const th2 = document.createElement('th');
+    th2.className = 'ot-th-date' + (isT ? ' today-col' : '');
+    const dow = DAYS_KO2[d.getDay()];
+    th2.innerHTML = `<span style="font-size:13px;font-weight:700;">${d.getMonth()+1}/${d.getDate()}</span> <span style="font-size:12px;font-weight:400;color:var(--tm);">(${dow})</span><br><span style="font-size:10px;color:#5c3d9e;font-weight:600;">${OPTICS_TIME}</span>`;
+    tr.appendChild(th2);
+  });
+  thead.appendChild(tr);
+
+  // 바디
+  OPTICS_ROOMS.forEach((room, ri) => {
+    if (ri > 0) {
+      const sep = document.createElement('tr');
+      sep.className = 'ot-td-sep';
+      const std = document.createElement('td');
+      std.colSpan = 6;
+      sep.appendChild(std);
+      tbody.appendChild(sep);
+    }
+
+    const tr2 = document.createElement('tr');
+    const tdRoom = document.createElement('td');
+    tdRoom.className = 'ot-td-room';
+    tdRoom.style.cssText = `background:${room.bg};color:${room.color};border-top:2px solid ${room.color};`;
+    tdRoom.textContent = room.name;
+    tr2.appendChild(tdRoom);
+
+    days.forEach(d => {
+      const dateStr = fmtDate(d);
+      const isT = dateStr === todayStr;
+      const entry = opticsEntries.find(e => Number(e.room) === room.id && e.date === dateStr);
+
+      const td = document.createElement('td');
+      td.className = 'ot-td-cell' + (isT ? ' today-col' : '');
+      td.dataset.room = room.id;
+      td.dataset.date = dateStr;
+
+      if (entry) {
+        // 미운영 일정인 경우
+        if (entry.status === 'outofservice') {
+          td.classList.add('outofservice-cell');
+          const card = document.createElement('div');
+          card.className = 'ot-card outofservice-card';
+          card.innerHTML = `
+            <div class="oos-icon">🔧</div>
+            <div class="oos-label">미 운 영</div>
+            ${entry.note ? `<div class="oos-note">${entry.note}</div>` : ''}
+          `;
+          card.addEventListener('click', ev => {
+            ev.stopPropagation();
+            showOtDetail(entry.id, ev);
+          });
+          td.appendChild(card);
+        } else {
+          // 일반 일정
+          const card = document.createElement('div');
+          card.className = 'ot-card';
+          card.style.borderLeft = `3px solid ${room.color}`;
+          const authorBadge = entry.author ? `<div class="oc-author">👤 ${entry.author}</div>` : '';
+          card.innerHTML = `
+            ${authorBadge}
+            ${entry.team    ? `<div class="oc-row"><span class="oc-lbl">팀</span><span class="oc-val">${entry.team}</span></div>` : ''}
+            ${entry.car     ? `<div class="oc-row"><span class="oc-lbl">차종</span><span class="oc-val">${entry.car}</span></div>` : ''}
+            ${entry.manager ? `<div class="oc-row"><span class="oc-lbl">담당자</span><span class="oc-val">${entry.manager}</span></div>` : ''}
+            ${entry.purpose ? `<div class="oc-row"><span class="oc-lbl">목적</span><span class="oc-val">${entry.purpose}</span></div>` : ''}
+            ${entry.qty     ? `<div class="oc-row"><span class="oc-lbl">수량</span><span class="oc-val">${entry.qty}</span></div>` : ''}
+            ${entry.note    ? `<div class="oc-row"><span class="oc-lbl">비고</span><span class="oc-val" style="color:#c43e1c;">${entry.note}</span></div>` : ''}
+          `;
+          card.addEventListener('click', ev => {
+            ev.stopPropagation();
+            showOtDetail(entry.id, ev);
+          });
+          td.appendChild(card);
+        }
+      } else {
+        td.addEventListener('click', () => openOpticsModal({ room: room.id, date: dateStr }));
+        const empty = document.createElement('div');
+        empty.className = 'ot-card empty-card';
+        empty.textContent = '+ 일정 등록';
+        td.appendChild(empty);
+      }
+
+      tr2.appendChild(td);
+    });
+
+    tbody.appendChild(tr2);
+  });
+}
+
+// 광학 모달 열기
+function openOpticsModal(pre) {
+  opticsEditingId = null;
+  document.getElementById('otModalTitle').textContent = '광학 일정 등록';
+  ['ot_team','ot_car','ot_manager','ot_qty','ot_purpose','ot_note'].forEach(id => document.getElementById(id).value = '');
+
+  document.getElementById('ot_outOfService').checked = false;
+  document.getElementById('otOutOfServiceRow').style.display = isAdminMode ? 'block' : 'none';
+  toggleOpticsFieldsDisabled(false);
+
+  // 등록자 이름 필드: 관리자는 숨김, 일반 사용자는 localStorage 자동완성
+  const authorRow = document.getElementById('otAuthorRow');
+  const authorInput = document.getElementById('ot_author');
+  if (isAdminMode) {
+    authorRow.style.display = 'none';
+    authorInput.value = '';
+  } else {
+    authorRow.style.display = 'block';
+    authorInput.value = loadAuthorName();
+    authorInput.readOnly = false;
+    authorInput.style.background = '';
+  }
+
+  if (pre?.room) document.getElementById('ot_room').value = pre.room;
+  if (pre?.date) document.getElementById('ot_date').value = pre.date;
+  else document.getElementById('ot_date').value = fmtDate(new Date());
+  const si = document.getElementById('otSlotInfo');
+  if (pre) {
+    const rName = OPTICS_ROOMS.find(r => r.id == pre.room)?.name || '';
+    si.style.display = 'block';
+    si.textContent = `📌 ${rName} / ${pre.date} / ${OPTICS_TIME}`;
+  } else {
+    si.style.display = 'none';
+  }
+  document.getElementById('otOverlay').classList.add('open');
+}
+
+// 미운영 체크박스 토글 시 다른 필드 비활성화
+function toggleOpticsOutOfService(cb) {
+  toggleOpticsFieldsDisabled(cb.checked);
+}
+
+function toggleOpticsFieldsDisabled(disabled) {
+  ['ot_team','ot_car','ot_manager','ot_qty','ot_purpose'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.disabled = disabled;
+      el.style.background = disabled ? '#f5f5f5' : '';
+      if (disabled) el.value = '';
+    }
+  });
+}
+
+function closeOpticsModal() {
+  document.getElementById('otOverlay').classList.remove('open');
+  opticsEditingId = null;
+}
+
+async function submitOpticsEntry() {
+  const room = parseInt(document.getElementById('ot_room').value);
+  const date = document.getElementById('ot_date').value;
+  const team = document.getElementById('ot_team').value.trim();
+  const car = document.getElementById('ot_car').value.trim();
+  const manager = document.getElementById('ot_manager').value.trim();
+  const qty = document.getElementById('ot_qty').value.trim();
+  const purpose = document.getElementById('ot_purpose').value.trim();
+  const note = document.getElementById('ot_note').value.trim();
+  const isOutOfService = document.getElementById('ot_outOfService').checked;
+  const author = isAdminMode ? '관리자' : document.getElementById('ot_author').value.trim();
+
+  if (!date) { alert('날짜를 선택하세요.'); return; }
+  if (isOutOfService && !isAdminMode) { alert('⚠️ 미운영 설정은 관리자만 가능합니다.'); return; }
+  if (!isAdminMode && !isOutOfService && !author) {
+    alert('⚠️ 등록자 이름을 입력하세요.');
+    document.getElementById('ot_author').focus();
+    return;
+  }
+
+  // 중복 체크
+  if (!opticsEditingId) {
+    const dup = opticsEntries.find(e => Number(e.room) === room && e.date === date);
+    if (dup) {
+      const dupTypeMsg = dup.status === 'outofservice' ? '미운영' : (dup.team || '(팀 미지정)');
+      alert(`해당 날짜에 이미 등록된 일정이 있습니다.\n\n[기존 일정]\n• 배광실: ${dup.room}배광실\n• 날짜: ${dup.date}\n• 구분: ${dupTypeMsg}\n• 등록자: ${dup.author || '(미지정)'}`);
+      return;
+    }
+  }
+
+  // 등록자 이름 localStorage 저장
+  if (!isAdminMode && author) saveAuthorName(author);
+
+  const entryId = opticsEditingId || generateId();
+  let entry;
+  if (isOutOfService) {
+    entry = { id: entryId, room, date, team:'', car:'', manager:'', qty:'', purpose:'', note, status:'outofservice', author:'관리자' };
+  } else {
+    entry = { id: entryId, room, date, team, car, manager, qty, purpose, note, status:'active', author };
+  }
+
+  if (opticsEditingId) {
+    const orig = opticsEntries.find(e => e.id === opticsEditingId);
+    const idx = opticsEntries.findIndex(e => e.id === opticsEditingId);
+    if (idx >= 0) opticsEntries[idx] = entry;
+    await updateOpticsInFirestore(entry);
+    // 히스토리: 수정
+    await addHistory({ action:'edit', entryId, room, date, author, before: orig || null, after: entry });
+    showToast(isOutOfService ? '🔧 미운영 일정 수정됨' : '✅ 광학 일정 수정됨');
+  } else {
+    opticsEntries.push(entry);
+    await saveOpticsToFirestore(entry);
+    // 히스토리: 등록
+    await addHistory({ action:'create', entryId, room, date, author, after: entry });
+    showToast(isOutOfService ? '🔧 미운영 일정 등록됨' : '✅ 광학 일정 등록됨');
+  }
+
+  closeOpticsModal();
+  buildOpticsTable();
+}
+
+// 🛠️ 관리자용 - 모든 광학 데이터 삭제 (Firestore + 로컬)
+async function clearAllOpticsData() {
+  if (!isAdminMode) {
+    showToast('⚠️ 관리자만 사용할 수 있습니다');
+    return;
+  }
+  if (!confirm(`Firestore의 모든 광학 일정을 삭제합니다.\n현재 ${opticsEntries.length}개의 데이터가 있습니다.\n계속하시겠습니까?`)) return;
+
+  try {
+    const { db, doc, deleteDoc } = window.firestoreDB;
+    for (const entry of [...opticsEntries]) {
+      await deleteDoc(doc(db, 'opticsEntries', entry.id));
+    }
+    opticsEntries = [];
+    buildOpticsTable();
+    showToast(`🗑️ 모든 광학 데이터 삭제 완료`);
+  } catch(e) {
+    console.error('전체 삭제 오류:', e);
+    showToast('⚠️ 삭제 중 오류 발생');
+  }
+}
+
+// 광학 상세 팝업
+function showOtDetail(id, e) {
+  console.log('[showOtDetail] 호출됨, id =', id);
+  // 이전 선택 카드 효과 제거
+  document.querySelectorAll('.ot-card.ot-selected').forEach(el => el.classList.remove('ot-selected'));
+
+  opticsSelectedId = id;
+  const entry = opticsEntries.find(x => x.id === id);
+  if (!entry) {
+    console.warn('[showOtDetail] 일정을 찾지 못함');
+    return;
+  }
+  console.log('[showOtDetail] 일정 찾음:', entry);
+
+  // 클릭한 카드에 선택 효과 추가 (Delete 키 대상 시각화)
+  if (e && e.currentTarget) {
+    e.currentTarget.classList.add('ot-selected');
+  } else {
+    // currentTarget이 없는 경우(stopPropagation 후 등) DOM에서 직접 찾기
+    const card = document.querySelector(`.ot-td-cell[data-room][data-date]`);
+    // 모든 카드 중 해당 entry id에 매핑되는 것 찾기 (간단 처리)
+  }
+
+  const room = OPTICS_ROOMS.find(r => r.id === Number(entry.room));
+  const dateObj = new Date(entry.date);
+  const isOOS = entry.status === 'outofservice';
+
+  const popup = document.getElementById('otDetail');
+  popup.style.borderTopColor = isOOS ? '#999' : '#5c3d9e';
+
+  document.getElementById('otd-title').textContent = isOOS ? '🔧 미운영' : (entry.team || room.name);
+  document.getElementById('otd-sub').textContent = `${entry.date.slice(5).replace('-','/')} (${DAYS_KO2[dateObj.getDay()]}) ${OPTICS_TIME}`;
+
+  if (isOOS) {
+    document.getElementById('otd-body').innerHTML = `
+      <div class="dr"><span class="di">🏢</span><div class="dr-text">${room.name}</div></div>
+      <div class="dr"><span class="di">📊</span><div class="dr-text"><div class="status-badge outofservice">🔧 미운영</div></div></div>
+      ${entry.note ? `<div class="dr"><span class="di">📝</span><div class="dr-text" style="color:#c43e1c;">${entry.note}</div></div>` : ''}
+      <div class="dr"><span class="di" style="font-size:10px;">💡</span><div class="dr-text" style="font-size:10px;color:var(--tm);">고장/재정비 등으로 일정 등록이 불가능한 상태${isAdminMode ? '<br>Delete 키로도 삭제 가능' : ''}</div></div>
+    `;
+  } else {
+    const authorRow = entry.author ? `<div class="dr"><span class="di">🔒</span><div class="dr-text"><b>등록자: ${entry.author}</b></div></div>` : '';
+    document.getElementById('otd-body').innerHTML = `
+      <div class="dr"><span class="di">🏢</span><div class="dr-text">${room.name}</div></div>
+      ${authorRow}
+      ${entry.team    ? `<div class="dr"><span class="di">👥</span><div class="dr-text">${entry.team}</div></div>` : ''}
+      ${entry.car     ? `<div class="dr"><span class="di">🚗</span><div class="dr-text">차종: ${entry.car}</div></div>` : ''}
+      ${entry.manager ? `<div class="dr"><span class="di">👤</span><div class="dr-text">${entry.manager}</div></div>` : ''}
+      ${entry.purpose ? `<div class="dr"><span class="di">🎯</span><div class="dr-text">${entry.purpose}</div></div>` : ''}
+      ${entry.qty     ? `<div class="dr"><span class="di">📦</span><div class="dr-text">수량: ${entry.qty}</div></div>` : ''}
+      ${entry.note    ? `<div class="dr"><span class="di">📝</span><div class="dr-text" style="color:#c43e1c;">${entry.note}</div></div>` : ''}
+      <div class="dr"><span class="di" style="font-size:10px;">⌨️</span><div class="dr-text" style="font-size:10px;color:var(--tm);">Delete 키로도 삭제 가능</div></div>
+    `;
+  }
+
+  const footer = document.getElementById('otd-footer');
+  footer.innerHTML = '';
+
+  const mkBtn = (label, cls, handler) => {
+    const b = document.createElement('button');
+    b.className = cls;
+    b.textContent = label;
+    b.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      console.log(`[버튼클릭] ${label} / id=${id}`);
+      handler();
+    });
+    return b;
+  };
+
+  // 히스토리 버튼은 항상 표시
+  footer.appendChild(mkBtn('📋 히스토리', 'btn-hist', () => openHistModal(id)));
+
+  if (isAdminMode) {
+    footer.appendChild(mkBtn('수정', 'btn-edit', () => editOpticsEntry(id)));
+    footer.appendChild(mkBtn('삭제', 'btn-del',  () => deleteOpticsEntry(id)));
+  } else if (isOOS) {
+    const note = document.createElement('div');
+    note.style.cssText = 'font-size:10px;color:var(--tm);padding-top:2px;';
+    note.textContent = '💡 미운영은 관리자만 수정/삭제';
+    footer.appendChild(note);
+  } else {
+    footer.appendChild(mkBtn('수정', 'btn-edit', () => editOpticsEntry(id)));
+    footer.appendChild(mkBtn('삭제', 'btn-del',  () => requestDeleteOpticsEntry(id)));
+  }
+
+  popup.classList.add('open');
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let x = e.clientX + 16, y = e.clientY - 8;
+  if (x + 280 > vw) x = e.clientX - 285;
+  if (y + 280 > vh) y = vh - 290;
+  if (y < 8) y = 8;
+  popup.style.left = x + 'px';
+  popup.style.top = y + 'px';
+}
+
+function closeOtDetail() {
+  document.getElementById('otDetail').classList.remove('open');
+  // 선택된 카드 효과 제거
+  document.querySelectorAll('.ot-card.ot-selected').forEach(el => el.classList.remove('ot-selected'));
+  opticsSelectedId = null;
+}
+
+function editOpticsEntry(id) {
+  const entry = opticsEntries.find(e => e.id === id);
+  if (!entry) return;
+  if (entry.status === 'outofservice' && !isAdminMode) {
+    showToast('⚠️ 미운영 일정은 관리자만 수정할 수 있습니다');
+    return;
+  }
+  openEditOpticsForm(id);
+}
+
+function openEditOpticsForm(id) {
+  const entry = opticsEntries.find(e => e.id === id);
+  if (!entry) return;
+
+  opticsEditingId = id;
+  document.getElementById('otModalTitle').textContent = '광학 일정 수정';
+  document.getElementById('ot_room').value = entry.room;
+  document.getElementById('ot_date').value = entry.date;
+  document.getElementById('ot_team').value = entry.team || '';
+  document.getElementById('ot_car').value = entry.car || '';
+  document.getElementById('ot_manager').value = entry.manager || '';
+  document.getElementById('ot_qty').value = entry.qty || '';
+  document.getElementById('ot_purpose').value = entry.purpose || '';
+  document.getElementById('ot_note').value = entry.note || '';
+
+  const isOOS = entry.status === 'outofservice';
+  document.getElementById('ot_outOfService').checked = isOOS;
+  document.getElementById('otOutOfServiceRow').style.display = isAdminMode ? 'block' : 'none';
+  toggleOpticsFieldsDisabled(isOOS);
+
+  // 등록자 이름 필드
+  const authorRow = document.getElementById('otAuthorRow');
+  if (isAdminMode || isOOS) {
+    authorRow.style.display = 'none';
+  } else {
+    authorRow.style.display = 'block';
+    document.getElementById('ot_author').value = entry.author || '';
+    document.getElementById('ot_author').readOnly = false;
+    document.getElementById('ot_author').style.background = '';
+  }
+
+  document.getElementById('otSlotInfo').style.display = 'none';
+  closeOtDetail();
+  document.getElementById('otOverlay').classList.add('open');
+}
+
+// ── 삭제자 확인 모달 ──
+let _delConfirmCallback = null;
+
+function openDelConfirm(entry, onConfirm) {
+  _delConfirmCallback = onConfirm;
+  const room = OPTICS_ROOMS.find(r => r.id === Number(entry.room));
+  document.getElementById('delConfirmInfo').innerHTML =
+    `<b>${room?.name || ''}</b> · ${entry.date}<br>` +
+    `등록자: <b>${entry.author || '(미지정)'}</b>` +
+    (entry.team ? ` &nbsp;|&nbsp; 팀: <b>${entry.team}</b>` : '') +
+    `<br><span style="color:#c43e1c;font-size:10px;">⚠️ 삭제 후 휴지통에 7일간 보관됩니다</span>`;
+  // 마지막 입력 이름 자동완성
+  const nameInput = document.getElementById('delConfirmName');
+  nameInput.value = loadAuthorName();
+  nameInput.style.borderColor = '';
+  document.getElementById('delConfirmOverlay').classList.add('open');
+  setTimeout(() => nameInput.focus(), 100);
+}
+
+function closeDelConfirm() {
+  document.getElementById('delConfirmOverlay').classList.remove('open');
+  _delConfirmCallback = null;
+}
+
+function confirmDelAction() {
+  const name = document.getElementById('delConfirmName').value.trim();
+  const input = document.getElementById('delConfirmName');
+  if (!name) {
+    input.style.borderColor = '#c43e1c';
+    input.focus();
+    input.placeholder = '⚠️ 성명을 반드시 입력하세요';
+    return;
+  }
+  const cb = _delConfirmCallback;
+  closeDelConfirm();
+  if (cb) cb(name);
+}
+
+// 일반 사용자의 삭제 요청 - 삭제자 이름 입력 후 휴지통 이동
+function requestDeleteOpticsEntry(id) {
+  console.log('[1] requestDeleteOpticsEntry 호출됨, id =', id);
+  const entry = opticsEntries.find(e => e.id === id);
+  if (!entry) {
+    console.warn('[1-X] 일정을 찾지 못함. opticsEntries 개수:', opticsEntries.length);
+    showToast('⚠️ 삭제할 일정을 찾을 수 없습니다');
+    return;
+  }
+  console.log('[2] 일정 찾음:', entry);
+  // confirm 대신 커스텀 모달로 삭제자 이름 수집
+  openDelConfirm(entry, (deleterName) => {
+    console.log('[3] 삭제자 이름 입력됨:', deleterName);
+    saveAuthorName(deleterName); // 다음 입력을 위해 저장
+    softDeleteOpticsEntry(id, deleterName);
+  });
+}
+
+// 실제 삭제: 휴지통으로 이동 + 히스토리 기록
+async function softDeleteOpticsEntry(id, deletedBy) {
+  console.log('[4] softDeleteOpticsEntry 시작, id =', id);
+  const entry = opticsEntries.find(e => e.id === id);
+  if (!entry) {
+    console.warn('[4-X] 일정을 다시 찾지 못함');
+    showToast('⚠️ 삭제할 일정을 찾을 수 없습니다');
+    return;
+  }
+  try {
+    console.log('[5] moveToTrash 호출 직전');
+    await moveToTrash(entry, deletedBy);
+    console.log('[6] moveToTrash 완료');
+    opticsEntries = opticsEntries.filter(e => e.id !== id);
+    addHistory({ action:'delete', entryId:id, room:entry.room, date:entry.date, author:deletedBy, before:entry })
+      .catch(err => console.warn('히스토리 저장 실패(무시):', err));
+    showToast(`🗑️ 휴지통으로 이동 (7일간 복구 가능)`);
+    console.log('[7] 삭제 완료');
+  } catch(err) {
+    console.error('[X] 삭제 실패:', err);
+    alert(`삭제에 실패했습니다.\n\n${err.message || err}\n\n[F12 → Console] 에서 자세한 오류 확인 가능`);
+  } finally {
+    closeOtDetail();
+    buildOpticsTable();
+  }
+}
+
+// 관리자 영구 삭제 + 히스토리 기록
+async function deleteOpticsEntry(id) {
+  console.log('[A] deleteOpticsEntry (관리자) 호출됨, id =', id, ' isAdminMode =', isAdminMode);
+  if (!isAdminMode) { showToast('⚠️ 관리자만 영구 삭제할 수 있습니다'); return; }
+  const entry = opticsEntries.find(e => e.id === id);
+  if (!entry) {
+    console.warn('[A-X] 일정을 찾지 못함');
+    showToast('⚠️ 삭제할 일정을 찾을 수 없습니다');
+    return;
+  }
+  console.log('[B] 일정 찾음:', entry);
+  const isOOS = entry.status === 'outofservice';
+  const confirmMsg = isOOS
+    ? `미운영 일정을 영구 삭제하시겠습니까?`
+    : `광학 일정을 영구 삭제하시겠습니까?\n[관리자 권한] 휴지통을 거치지 않습니다.`;
+  const ok = confirm(confirmMsg);
+  console.log('[C] 사용자 확인 결과:', ok);
+  if (!ok) return;
+
+  try {
+    console.log('[D] Firestore 영구 삭제 호출');
+    opticsEntries = opticsEntries.filter(e => e.id !== id);
+    await deleteOpticsFromFirestore(id);
+    console.log('[E] Firestore 영구 삭제 완료');
+    addHistory({ action:'delete', entryId:id, room:entry.room, date:entry.date, author:'관리자', before:entry })
+      .catch(err => console.warn('히스토리 저장 실패(무시):', err));
+    showToast(isOOS ? '🗑️ 미운영 일정 영구 삭제됨' : '🗑️ 광학 일정 영구 삭제됨');
+  } catch(err) {
+    console.error('[X] 영구 삭제 실패:', err);
+    alert(`영구 삭제에 실패했습니다.\n\n${err.message || err}`);
+  } finally {
+    closeOtDetail();
+    buildOpticsTable();
+  }
+}
+
+// ── 휴지통 모달 ──
+function openTrashModal() {
+  document.getElementById('trashOverlay').classList.add('open');
+  renderTrashList();
+}
+function closeTrashModal() {
+  document.getElementById('trashOverlay').classList.remove('open');
+}
+
+function renderTrashList() {
+  const body = document.getElementById('trashBody');
+  // 만료되지 않은 항목만, 최신 삭제 순
+  const validTrash = opticsTrash
+    .filter(t => !isExpired(t.deletedAt))
+    .sort((a, b) => b.deletedAt - a.deletedAt);
+
+  if (validTrash.length === 0) {
+    body.innerHTML = `<div class="trash-empty">🗑️ 휴지통이 비어 있습니다<br><span style="font-size:10px;">삭제된 일정은 7일간 보관됩니다</span></div>`;
+    return;
+  }
+
+  const adminControls = isAdminMode;
+  body.innerHTML = `<div class="trash-list">${validTrash.map(t => {
+    const room = OPTICS_ROOMS.find(r => r.id === Number(t.room));
+    const remain = daysLeft(t.deletedAt);
+    const remainColor = remain <= 1 ? '#c43e1c' : remain <= 3 ? '#d97706' : '#666';
+    return `
+      <div class="trash-item">
+        <div class="trash-info">
+          <div class="trash-info-main">${t.team || '(팀 미지정)'} <span style="font-size:10px;color:${room?.color || '#888'};">· ${room?.name || ''}</span></div>
+          <div class="trash-info-sub">
+            📅 <b>${t.date}</b> &nbsp;|&nbsp; 👤 등록자: <b>${t.author || '미지정'}</b>
+            ${t.car ? `&nbsp;|&nbsp; 🚗 ${t.car}` : ''}
+            ${t.manager ? `&nbsp;|&nbsp; 담당: ${t.manager}` : ''}
+            <br>
+            🗑️ 삭제: <b>${fmtTrashDate(t.deletedAt)}</b> (by ${t.deletedBy || '익명'})
+            &nbsp;|&nbsp; <span style="color:${remainColor};font-weight:600;">⏱ ${remain}일 후 영구 삭제</span>
+          </div>
+        </div>
+        <div class="trash-actions">
+          ${adminControls ? `<button class="btn-restore" onclick="handleRestore('${t.id}')">복구</button>
+          <button class="btn-permdel" onclick="handlePermDelete('${t.id}')">영구삭제</button>` :
+          `<span style="font-size:10px;color:var(--tm);padding:6px 4px;">관리자만 복구/삭제 가능</span>`}
+        </div>
+      </div>
+    `;
+  }).join('')}</div>`;
+}
+
+async function handleRestore(id) {
+  if (!isAdminMode) { showToast('⚠️ 관리자만 복구할 수 있습니다'); return; }
+  await restoreFromTrash(id);
+  buildOpticsTable();
+  renderTrashList();
+}
+
+async function handlePermDelete(id) {
+  if (!isAdminMode) { showToast('⚠️ 관리자만 영구 삭제할 수 있습니다'); return; }
+  if (!confirm('이 항목을 영구 삭제하시겠습니까?\n\n복구할 수 없습니다.')) return;
+  await permanentDeleteFromTrash(id);
+  renderTrashList();
+  showToast('🗑️ 영구 삭제됨');
+}
+
+document.addEventListener('click', e => {
+  const p = document.getElementById('otDetail');
+  if (!p || !p.classList.contains('open')) return;
+  // 광학 카드를 클릭한 경우는 무시 (showOtDetail이 처리)
+  if (e.target.closest('.ot-card')) return;
+  // 광학 상세 팝업 자체는 무시
+  if (p.contains(e.target)) return;
+  closeOtDetail();
+});
+
+function opticsRender() {
+  const lbl = opticsWeekLabel();
+  // 패널 내 라벨(id=opticsWeekLbl)은 이제 없으므로 topbar 라벨만 업데이트
+  const topLbl = document.getElementById('opticsWeekLblTop');
+  if (topLbl) topLbl.textContent = lbl;
+  buildOpticsTable();
+}
+function opticsChangeWeek(dir) {
+  opticsMonday = new Date(opticsMonday);
+  opticsMonday.setDate(opticsMonday.getDate() + dir * 7);
+  opticsRender();
+}
+function opticsGoToday() {
+  opticsMonday = getMonday(new Date());
+  opticsRender();
+}
 
 // ══════════════════════════════════════════════════════════════
 // 🚀 앱 초기화
@@ -1622,22 +3287,58 @@ function goToday(){currentMonday=getMonday(new Date());render();}
 
 window.addEventListener('load', async () => {
   console.log('🚀 앱 시작...');
-  
+
   let retries = 0;
   while (!window.firestoreDB && retries < 20) {
     await new Promise(resolve => setTimeout(resolve, 100));
     retries++;
   }
-  
+
   if (!window.firestoreDB) {
     alert('⚠️ Firestore 연결 실패. 페이지를 새로고침 해주세요.');
     return;
   }
-  
+
   await loadEventsFromFirestore();
+  await loadOpticsFromFirestore();
+  await loadTrashFromFirestore();
+  await loadHistoryFromFirestore();
+  await loadDayBlocksFromFirestore();
   setupFirestoreListener();
+  setupOpticsListener();
+  setupTrashListener();
+  setupHistoryListener();
+  setupDayBlocksListener();
   render();
-  
+
+  // 모달 외부 클릭으로 닫기
+  document.getElementById('trashOverlay').addEventListener('click', e => {
+    if (e.target.id === 'trashOverlay') closeTrashModal();
+  });
+  document.getElementById('histOverlay').addEventListener('click', e => {
+    if (e.target.id === 'histOverlay') closeHistModal();
+  });
+  document.getElementById('delConfirmOverlay').addEventListener('click', e => {
+    if (e.target.id === 'delConfirmOverlay') closeDelConfirm();
+  });
+  document.getElementById('delConfirmName').addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmDelAction();
+    if (e.key === 'Escape') closeDelConfirm();
+  });
+  document.getElementById('blockOverlay').addEventListener('click', e => {
+    if (e.target.id === 'blockOverlay') closeBlockModal();
+  });
+  document.getElementById('blockReason').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitBlock();
+    if (e.key === 'Escape') closeBlockModal();
+  });
+
+  // 매 시간마다 만료된 휴지통 항목 자동 정리
+  setInterval(async () => {
+    await purgeExpiredTrash();
+    updateTrashBadge();
+  }, 60 * 60 * 1000);
+
   console.log('✅ 앱 초기화 완료');
 });
 </script>
