@@ -409,7 +409,48 @@ table.gt th,table.gt td{border:1px solid var(--bl);text-align:center;vertical-al
 .pin-btn.submit{background:var(--accent);color:#fff;}
 .pin-btn.submit:hover{background:var(--ah);}
 
-/* ══════════ 광학 탭 ══════════ */
+/* ══════════ 유럽인증 (status:eucert) ══════════ */
+/* 일반 블록과 동일한 구조지만, 색상을 진한 파란색으로 강조 */
+.ev-block.status-eucert{
+  background:linear-gradient(135deg, #0d47a1 0%, #1565c0 60%, #1976d2 100%) !important;
+  color:#fff !important;
+  border-left:4px solid #002171 !important;
+  box-shadow:0 2px 6px rgba(13,71,161,.4) !important;
+  opacity:1;
+  z-index:6;
+}
+.ev-block.status-eucert::before{
+  content:'🇪🇺';
+  position:absolute;
+  top:2px; left:5px;
+  font-size:11px;
+}
+.ev-block.status-eucert::after{
+  content:'인증';
+  position:absolute;
+  top:2px; right:3px;
+  font-size:9px;
+  font-weight:700;
+  background:#fff;
+  color:#0d47a1;
+  padding:1px 4px;
+  border-radius:2px;
+}
+.ev-block.status-eucert .ev-t{
+  font-size:11px;
+  font-weight:800;
+  text-shadow:0 1px 2px rgba(0,0,0,.3);
+  margin-top:12px;
+}
+.ev-block.status-eucert .ev-s,
+.ev-block.status-eucert .ev-d{
+  color:rgba(255,255,255,.9) !important;
+  opacity:1;
+}
+
+/* 사이드바 통계의 유럽인증 점 */
+.f-dot.eucert-dot{background:#1565c0;}
+
 .optics-wrap{flex:1;overflow:auto;background:#f8f7f6;display:flex;flex-direction:column;}
 .optics-toolbar{background:#fff;border-bottom:2px solid var(--border);display:flex;align-items:center;gap:10px;padding:0 16px;height:46px;flex-shrink:0;}
 .optics-title{font-size:14px;font-weight:700;color:#5c3d9e;}
@@ -708,6 +749,10 @@ table.ot th,table.ot td{border:1px solid var(--bl);white-space:nowrap;}
             <input type="checkbox" checked onchange="toggleStatus('outofservice',this)">
             <div class="f-dot" style="background:#999"></div>미운영
           </label>
+          <label class="f-row">
+            <input type="checkbox" checked onchange="toggleStatus('eucert',this)">
+            <div class="f-dot eucert-dot"></div>🇪🇺 유럽인증
+          </label>
         </div>
       </div>
       <div class="sb-sec">
@@ -780,10 +825,17 @@ table.ot th,table.ot td{border:1px solid var(--bl);white-space:nowrap;}
       </div>
       <div class="frow" id="outOfServiceRow" style="display:none;">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-          <input type="checkbox" id="f_outOfService" style="width:16px;height:16px;">
+          <input type="checkbox" id="f_outOfService" style="width:16px;height:16px;" onchange="onSpecialTypeChange('outofservice')">
           <span>🔧 미운영 (고장/재정비 등)</span>
         </label>
         <div style="font-size:10px;color:var(--tm);margin-top:4px;padding-left:24px;">※ 미운영으로 설정하면 해당 시간대는 예약이 불가능합니다</div>
+      </div>
+      <div class="frow" id="euCertRow" style="display:none;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="f_euCert" style="width:16px;height:16px;" onchange="onSpecialTypeChange('eucert')">
+          <span>🇪🇺 유럽인증 (인증관 입회 시험)</span>
+        </label>
+        <div style="font-size:10px;color:#1565c0;margin-top:4px;padding-left:24px;">※ 유럽인증으로 설정하면 진한 파란색으로 강조 표시됩니다</div>
       </div>
       <div class="frow"><label>비고</label><textarea id="f_note" placeholder="특이사항 (선택)"></textarea></div>
     </div>
@@ -802,7 +854,7 @@ table.ot th,table.ot td{border:1px solid var(--bl);white-space:nowrap;}
       <div class="dh-sub" id="dp-sub"></div>
     </div>
     <div class="dh-actions">
-      <button class="dh-btn" id="copyBtn" title="복사 (Ctrl+C)" onclick="copySelectedEvent()">📋</button>
+      <button class="dh-btn" id="copyBtn" title="복사하여 붙여넣기" onclick="copyAndPaste()">📋</button>
       <button class="dh-btn" title="수정 (더블클릭)" onclick="editEvent()">✏️</button>
       <button class="dh-btn" title="닫기" onclick="closeDetail()">✕</button>
     </div>
@@ -1047,7 +1099,7 @@ let currentMonday=getMonday(new Date());
 let events=[];
 let dayBlocks={};  // { 'YYYY-MM-DD': { reason, blockedAt, blockedBy } }
 let visibleRooms=new Set([1,2,3,4,5,6]);
-let visibleStatuses=new Set(['pending','approved','rejected','outofservice']); // 상태 필터
+let visibleStatuses=new Set(['pending','approved','rejected','outofservice','eucert']); // 상태 필터
 let selectedId=null,editingId=null;
 let isFirestoreReady = false;
 let unsubscribeSnapshot = null;
@@ -1069,7 +1121,7 @@ function toggleAdminMode() {
     if (cleanBtn) cleanBtn.style.display = 'none';
     showToast('👋 관리자 모드 해제됨');
     closeDetail();
-    render(); // 날짜 헤더 클릭 이벤트 제거
+    render();
   } else {
     openPinModal();
   }
@@ -1102,7 +1154,7 @@ function verifyPin() {
     const cleanBtn = document.getElementById('opticsCleanBtn');
     if (cleanBtn) cleanBtn.style.display = 'inline-block';
     closePinModal();
-    render(); // 날짜 헤더에 클릭 이벤트 즉시 부착
+    render();
     showToast('✅ 관리자 모드 활성화');
   } else {
     errorEl.textContent = '❌ PIN이 올바르지 않습니다';
@@ -1422,6 +1474,7 @@ function buildTable(){
   const days=getWeekDays();const todayStr=fmtDate(new Date());
   const thead=document.getElementById('thead');const tbody=document.getElementById('tbody');
   thead.innerHTML='';tbody.innerHTML='';
+
   const tr1=document.createElement('tr');let th;
   th=document.createElement('th');th.className='th-corner';th.rowSpan=2;th.style.minWidth='80px';tr1.appendChild(th);
   th=document.createElement('th');th.className='th-corner';th.rowSpan=2;th.style.width='28px';tr1.appendChild(th);
@@ -1439,8 +1492,8 @@ function buildTable(){
       th.textContent=`${d.getDate()}(${DAYS_KO[d.getDay()]})`;
     }
     if(isAdminMode){
-      th.title = block ? `클릭: 블락 해제/수정 (${block.reason})` : '클릭: 하루 전체 블락';
-      th.addEventListener('click', ()=>openBlockModal(dateStr));
+      th.title=block?`클릭: 블락 해제/수정 (${block.reason})`:'클릭: 하루 전체 블락';
+      th.addEventListener('click',()=>openBlockModal(dateStr));
     }
     tr1.appendChild(th);
   });
@@ -1476,7 +1529,7 @@ function buildTable(){
       const tdT=document.createElement('td');tdT.className='td-time'+(isFirstPM?' pm':'');tdT.innerHTML=`<span class="td">${rowDef.dTime}</span><br><span class="tn">(${rowDef.nTime})</span>`;tr.appendChild(tdT);
       days.forEach(d=>{
         const dateStr=fmtDate(d);const isToday=dateStr===todayStr;
-        const dayBlock=dayBlocks[dateStr]; // 하루 블락 여부
+        const dayBlock=dayBlocks[dateStr];
 
         ['day','night'].forEach(shift=>{
           const isNight=shift==='night';const evList=evMap[`${dateStr}-${shift}`]||[];
@@ -1541,9 +1594,9 @@ function onBlockDragStart(e,evId){
   if(e.button!==0)return;if(clickTimer)return;
   const ev=events.find(x=>x.id===evId);if(!ev)return;
   
-  // 미운영 블록은 관리자만 드래그 가능
-  if(ev.status === 'outofservice' && !isAdminMode) {
-    showToast('⚠️ 미운영 일정은 관리자만 이동할 수 있습니다');
+  // 미운영/유럽인증 블록은 관리자만 드래그 가능
+  if((ev.status === 'outofservice' || ev.status === 'eucert') && !isAdminMode) {
+    showToast('⚠️ 이 일정은 관리자만 이동할 수 있습니다');
     return;
   }
   
@@ -1603,9 +1656,9 @@ function onResizeStart(e,evId,edge){
   if(e.button!==0)return;e.preventDefault();e.stopPropagation();
   const ev=events.find(x=>x.id===evId);if(!ev)return;
   
-  // 미운영 블록은 관리자만 리사이즈 가능
-  if(ev.status === 'outofservice' && !isAdminMode) {
-    showToast('⚠️ 미운영 일정은 관리자만 수정할 수 있습니다');
+  // 미운영/유럽인증 블록은 관리자만 리사이즈 가능
+  if((ev.status === 'outofservice' || ev.status === 'eucert') && !isAdminMode) {
+    showToast('⚠️ 이 일정은 관리자만 수정할 수 있습니다');
     return;
   }
   
@@ -1704,6 +1757,23 @@ async function onResizeEnd(e){
 let selection=null;
 function onMouseDown(e){
   if(e.button!==0)return;e.preventDefault();const td=e.currentTarget;
+
+  // 붙여넣기 모드: paste-ready 셀 클릭 시 즉시 붙여넣기
+  if(pasteMode && copiedEvent){
+    if(td.classList.contains('paste-ready')){
+      const room=parseInt(td.dataset.room);
+      const date=td.dataset.date;
+      const shift=td.dataset.shift;
+      const startRi=parseInt(td.dataset.ri);
+      pasteEvent(room,date,shift,startRi);
+      return;
+    } else {
+      // paste-ready가 아닌 셀 클릭 시 paste 모드 종료
+      exitPasteMode();
+      return;
+    }
+  }
+
   if(selection&&parseInt(td.dataset.room)===selection.room&&td.dataset.date===selection.date&&td.dataset.shift===selection.shift&&parseInt(td.dataset.ri)>=selection.startRi&&parseInt(td.dataset.ri)<=selection.endRi){openFromSelection();return;}
   clearSelection();updateCursorFromTd(td);
   drag={room:parseInt(td.dataset.room),date:td.dataset.date,shift:td.dataset.shift,startRi:parseInt(td.dataset.ri),endRi:parseInt(td.dataset.ri),active:true,moved:false};
@@ -1882,17 +1952,19 @@ function updateTimeOpts(defStart,defEnd){const shift=document.getElementById('f_
 function openModal(pre){
   editingId=null;document.getElementById('modalTitle').textContent='새 예약 등록';
   ['f_dept','f_manager','f_title','f_note'].forEach(id=>document.getElementById(id).value='');
-  
+
   // 신규 등록 시에는 모든 필드 활성화
   document.getElementById('f_dept').disabled = false;
   document.getElementById('f_manager').disabled = false;
-  
-  // 미운영 체크박스 초기화
+
+  // 미운영/유럽인증 체크박스 초기화
   document.getElementById('f_outOfService').checked = false;
-  
-  // 관리자만 미운영 설정 가능
+  document.getElementById('f_euCert').checked = false;
+
+  // 관리자만 미운영/유럽인증 설정 가능
   document.getElementById('outOfServiceRow').style.display = isAdminMode ? 'block' : 'none';
-  
+  document.getElementById('euCertRow').style.display = isAdminMode ? 'block' : 'none';
+
   const sel=document.getElementById('f_room');sel.innerHTML=ROOMS.map(r=>`<option value="${r.id}">${r.name}</option>`).join('');
   if(pre?.room)sel.value=pre.room;document.getElementById('f_shift').value=pre?.shift||'day';updateTimeOpts(pre?.startTime,pre?.endTime);document.getElementById('f_date').value=pre?.date||fmtDate(new Date());
   const si=document.getElementById('slotInfo');if(pre){si.style.display='block';si.textContent=`📌 ${ROOMS.find(r=>r.id==pre.room)?.name||''} / ${pre.date} / ${pre.shift==='day'?'주간':'야간'} ${pre.startTime}~${pre.endTime}`;}else si.style.display='none';
@@ -1910,21 +1982,33 @@ async function submitReservation(){
   const endTime=document.getElementById('f_end').value;
   const note=document.getElementById('f_note').value.trim();
   const isOutOfService=document.getElementById('f_outOfService').checked;
-  
-  // 미운영 설정 시 제목 자동 설정
-  const finalTitle = isOutOfService ? '미운영' : title;
-  const finalDept = isOutOfService ? '시설관리' : dept;
-  const finalManager = isOutOfService ? '관리자' : manager;
-  
-  if(!isOutOfService && (!title||!date)){alert('필수 항목을 입력하세요.');return;}
-  if(!editingId && !isOutOfService && (!dept||!manager)){alert('의뢰 부서와 담당자를 입력하세요.');return;}
+  const isEuCert=document.getElementById('f_euCert').checked;
 
-  // 하루 블락된 날 예약 차단 (관리자 + 미운영은 허용)
-  if(!isAdminMode && !isOutOfService && dayBlocks[date]){
+  // 특수 상태별 값 자동 설정
+  let finalTitle = title;
+  let finalDept = dept;
+  let finalManager = manager;
+  if (isOutOfService) {
+    finalTitle = '미운영';
+    finalDept = '시설관리';
+    finalManager = '관리자';
+  } else if (isEuCert) {
+    // 유럽인증은 title을 인증명으로 사용. 비어있으면 기본값
+    if (!finalTitle) finalTitle = '유럽인증';
+    if (!finalDept) finalDept = '인증팀';
+  }
+
+  const isSpecial = isOutOfService || isEuCert;
+  if(!isSpecial && (!title||!date)){alert('필수 항목을 입력하세요.');return;}
+  if(!editingId && !isSpecial && (!dept||!manager)){alert('의뢰 부서와 담당자를 입력하세요.');return;}
+  if(isEuCert && !finalTitle){alert('인증명(시험 내용)을 입력하세요.');return;}
+
+  // 하루 블락된 날 예약 차단 (관리자 작업은 허용)
+  if(!isAdminMode && !isSpecial && dayBlocks[date]){
     alert(`⚠️ ${date}은(는) 블락된 날입니다.\n사유: ${dayBlocks[date].reason}\n\n해당 날에는 예약이 불가합니다.`);
     return;
   }
-  
+
   const sMap=shift==='day'?DAY_START_TO_RI:NIGHT_START_TO_RI;const eMap=shift==='day'?DAY_END_TO_RI:NIGHT_END_TO_RI;const newS=sMap[startTime]??0,newE=eMap[endTime]??0;
   const conflict=events.filter(e=>{
     if(e.id===editingId||e.room!==room||e.date!==date||e.shift!==shift)return false;
@@ -1933,31 +2017,37 @@ async function submitReservation(){
     return newS<=en&&newE>=s;
   });
   if(conflict.length>0){alert(`⚠️ 시간이 겹치는 예약이 있습니다.\n(${conflict[0].title} ${conflict[0].startTime}~${conflict[0].endTime})`);return;}
-  
+
   saveUndo();
-  
+
+  // 상태 결정 우선순위: 유럽인증 > 미운영 > 관리자 승인 > 일반 대기
+  const newStatus = isEuCert ? 'eucert'
+    : isOutOfService ? 'outofservice'
+    : (isAdminMode ? 'approved' : 'pending');
+
   if(editingId){
     const ev = events.find(e=>e.id===editingId);
     if(ev){
-      // 관리자는 모든 항목 수정 가능, 일반 사용자는 시험 내용만
       if (isAdminMode) {
         ev.room=room;ev.shift=shift;ev.startTime=startTime;ev.endTime=endTime;
         ev.title=finalTitle;ev.dept=finalDept;ev.manager=finalManager;ev.date=date;ev.note=note;
-        ev.status = isOutOfService ? 'outofservice' : ev.status;
+        // 특수 체크박스가 켜져 있으면 그에 맞게, 아니면 기존 상태 유지 (단, eucert/outofservice는 자동 해제)
+        if (isEuCert) ev.status = 'eucert';
+        else if (isOutOfService) ev.status = 'outofservice';
+        else if (ev.status === 'eucert' || ev.status === 'outofservice') ev.status = 'approved';
       } else {
-        // 일반 사용자는 시험 내용만 수정
         ev.title=title;ev.note=note;
       }
       await updateEventInFirestore(ev);
     }
   }else{
-    // 미운영은 자동으로 outofservice 상태
-    const status = isOutOfService ? 'outofservice' : (isAdminMode ? 'approved' : 'pending');
-    const newEvent = {id:generateId(),room,shift,startTime,endTime,title:finalTitle,dept:finalDept,manager:finalManager,date,note,status};
+    const newEvent = {id:generateId(),room,shift,startTime,endTime,title:finalTitle,dept:finalDept,manager:finalManager,date,note,status:newStatus};
     events.push(newEvent);
     await addEventToFirestore(newEvent);
-    
-    if (isOutOfService) {
+
+    if (isEuCert) {
+      showToast('🇪🇺 유럽인증 일정이 등록되었습니다');
+    } else if (isOutOfService) {
       showToast('🔧 미운영 일정이 등록되었습니다');
     } else if (isAdminMode) {
       showToast('✅ 예약이 승인되었습니다');
@@ -1965,7 +2055,7 @@ async function submitReservation(){
       showToast('⏳ 예약 신청이 완료되었습니다. 관리자 승인을 기다려주세요');
     }
   }
-  
+
   closeModal();buildTable();renderStats();refreshCopyHighlight();
 }
 
@@ -1982,9 +2072,11 @@ function selectBlock(id,e){
   copiedEvent={...ev};
   pasteMode=false;
   document.querySelectorAll(`.ev-block[data-evid="${id}"]`).forEach(el=>el.classList.add('ev-selected','copied'));
-  
+
   if(ev.status === 'outofservice') {
     showToast(`📋 미운영 일정 선택됨 — 관리자만 붙여넣기 가능`);
+  } else if(ev.status === 'eucert') {
+    showToast(`🇪🇺 유럽인증 선택됨 — 📋 버튼으로 복사하세요`);
   } else {
     showToast(`📋 "${copiedEvent.title}" 선택됨 — 붙여넣을 셀을 클릭 후 Ctrl+V`);
   }
@@ -1993,13 +2085,13 @@ function selectBlock(id,e){
 function deselectBlock(){document.querySelectorAll('.ev-block.ev-selected').forEach(el=>el.classList.remove('ev-selected','copied'));selectedId=null;}
 function openEditModal(id){
   const ev=events.find(e=>e.id===id);if(!ev)return;
-  
-  // 미운영 블록은 관리자만 수정 가능
-  if(ev.status === 'outofservice' && !isAdminMode) {
-    showToast('⚠️ 미운영 일정은 관리자만 수정할 수 있습니다');
+
+  // 미운영/유럽인증 블록은 관리자만 수정 가능
+  if((ev.status === 'outofservice' || ev.status === 'eucert') && !isAdminMode) {
+    showToast('⚠️ 이 일정은 관리자만 수정할 수 있습니다');
     return;
   }
-  
+
   editingId=id;document.getElementById('modalTitle').textContent='예약 수정';
   const sel=document.getElementById('f_room');sel.innerHTML=ROOMS.map(r=>`<option value="${r.id}">${r.name}</option>`).join('');sel.value=ev.room;
   document.getElementById('f_title').value=ev.title;
@@ -2008,11 +2100,13 @@ function openEditModal(id){
   document.getElementById('f_date').value=ev.date;
   document.getElementById('f_note').value=ev.note||'';
   document.getElementById('f_shift').value=ev.shift;
-  
-  // 미운영 체크박스 설정
+
+  // 미운영/유럽인증 체크박스 설정
   document.getElementById('f_outOfService').checked = (ev.status === 'outofservice');
+  document.getElementById('f_euCert').checked = (ev.status === 'eucert');
   document.getElementById('outOfServiceRow').style.display = isAdminMode ? 'block' : 'none';
-  
+  document.getElementById('euCertRow').style.display = isAdminMode ? 'block' : 'none';
+
   // 관리자가 아닌 경우 의뢰부서, 담당자, 날짜, 시간 등 수정 불가
   if (!isAdminMode) {
     document.getElementById('f_dept').disabled = true;
@@ -2031,7 +2125,7 @@ function openEditModal(id){
     document.getElementById('f_start').disabled = false;
     document.getElementById('f_end').disabled = false;
   }
-  
+
   updateTimeOpts(ev.startTime,ev.endTime);document.getElementById('slotInfo').style.display='none';document.getElementById('overlay').classList.add('open');
 }
 
@@ -2039,10 +2133,25 @@ function openEditModal(id){
 let copiedEvent=null,pasteMode=false;
 function showToast(msg,duration=2200){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),duration);}
 function copySelectedEvent(id){const targetId=id||selectedId;if(!targetId)return;const ev=events.find(e=>e.id===targetId);if(!ev)return;copiedEvent={...ev};pasteMode=false;refreshCopyHighlight();showToast(`📋 "${ev.title}" 복사됨 — 셀 선택 후 Ctrl+V`);}
+
+// 복사 + 붙여넣기 모드 즉시 진입 (상세 팝업의 📋 버튼)
+function copyAndPaste(){
+  if(!selectedId)return;
+  const ev=events.find(e=>e.id===selectedId);
+  if(!ev)return;
+  copiedEvent={...ev};
+  refreshCopyHighlight();
+  closeDetail();
+  deselectBlock();
+  enterPasteMode();
+}
 function refreshCopyHighlight(){document.querySelectorAll('.ev-block.copied').forEach(el=>el.classList.remove('copied'));if(!copiedEvent)return;document.querySelectorAll(`.ev-block[data-evid="${copiedEvent.id}"]`).forEach(el=>el.classList.add('copied'));}
 function pasteToSelection(){
   if(!copiedEvent){showToast('먼저 예약 블록을 클릭하세요');return;}
-  let target=null;if(selection)target={room:selection.room,date:selection.date,shift:selection.shift,startRi:selection.startRi};else if(cursor)target={room:cursor.room,date:cursor.date,shift:cursor.shift,startRi:cursor.ri};else{showToast('붙여넣을 셀을 먼저 클릭하세요');return;}
+  let target=null;
+  if(selection)target={room:selection.room,date:selection.date,shift:selection.shift,startRi:selection.startRi};
+  else if(cursor)target={room:cursor.room,date:cursor.date,shift:cursor.shift,startRi:cursor.ri};
+  else{showToast('붙여넣을 셀을 먼저 클릭하세요');return;}
   pasteEvent(target.room,target.date,target.shift,target.startRi);clearSelection();cursor=null;applyCursor();
 }
 function enterPasteMode(){if(!copiedEvent){showToast('먼저 예약을 복사하세요');return;}pasteMode=true;showToast('📌 붙여넣을 빈 셀을 클릭하세요 (Esc: 취소)',4000);applyPasteReady();}
@@ -2067,13 +2176,18 @@ function applyPasteReady(){
 }
 async function pasteEvent(room,date,shift,startRi){
   if(!copiedEvent)return;
-  
+
   // 미운영은 관리자만 붙여넣기 가능
   if(copiedEvent.status === 'outofservice' && !isAdminMode) {
     showToast('⚠️ 미운영 일정은 관리자만 복사할 수 있습니다');
     return;
   }
-  
+  // 유럽인증은 관리자만 붙여넣기 가능
+  if(copiedEvent.status === 'eucert' && !isAdminMode) {
+    showToast('⚠️ 유럽인증 일정은 관리자만 복사할 수 있습니다');
+    return;
+  }
+
   const{startRi:origStart,endRi:origEnd}=evToRi(copiedEvent);
   const span=origEnd-origStart+1;
   let endRi=startRi+span-1;
@@ -2090,18 +2204,23 @@ async function pasteEvent(room,date,shift,startRi){
     if(booked){ endRi=r-1; break; }
   }
 
-  if(endRi<startRi){showToast(`⚠️ 해당 위치에 이미 예약이 있습니다`);return;}
+  if(endRi<startRi){
+    showToast(`⚠️ 해당 위치에 이미 예약이 있습니다`);
+    return;
+  }
 
   const{startTime,endTime}=riToTimes(shift,startRi,endRi);
-  
-  // 미운영은 상태 유지, 일반 예약은 권한에 따라 처리
+
+  // 상태 결정
   let pasteStatus;
   if(copiedEvent.status === 'outofservice') {
     pasteStatus = 'outofservice';
+  } else if(copiedEvent.status === 'eucert') {
+    pasteStatus = 'eucert';
   } else {
     pasteStatus = isAdminMode ? 'approved' : 'pending';
   }
-  
+
   const newEv={
     ...copiedEvent,
     id:generateId(),
@@ -2119,6 +2238,8 @@ async function pasteEvent(room,date,shift,startRi){
   
   if(copiedEvent.status === 'outofservice') {
     showToast(`🔧 미운영 일정 복사됨 → ${date} ${shiftLbl} ${startTime}~${endTime}`);
+  } else if(copiedEvent.status === 'eucert') {
+    showToast(`🇪🇺 유럽인증 복사됨 → ${date} ${shiftLbl} ${startTime}~${endTime}`);
   } else if(hrs<span){
     showToast(`✅ "${newEv.title}" → ${date} ${shiftLbl} ${startTime}~${endTime} (원본 ${span}h → ${hrs}h로 축소)`);
   } else {
@@ -2144,7 +2265,8 @@ function showDetail(id,e){
     'pending': '⏳ 승인 대기',
     'approved': '✓ 승인 완료',
     'rejected': '✕ 반려됨',
-    'outofservice': '🔧 미운영'
+    'outofservice': '🔧 미운영',
+    'eucert': '🇪🇺 유럽인증'
   };
   const statusClass = ev.status || 'pending';
   const statusBadge = `<div class="status-badge ${statusClass}">${statusText[statusClass]}</div>`;
@@ -2228,7 +2350,22 @@ async function deleteEvent(){
   showToast(`🗑️ "${title}" 삭제됨 (Ctrl+Z로 복구)`);
 }
 function editEvent(){const id=selectedId;closeDetail();openEditModal(id);}
-document.addEventListener('click',e=>{const p=document.getElementById('detailPopup');if(p.classList.contains('open')&&!p.contains(e.target))closeDetail();});
+document.addEventListener('click',e=>{
+  const p=document.getElementById('detailPopup');
+  if(p.classList.contains('open')&&!p.contains(e.target))closeDetail();
+});
+
+// ══════════════════════════════════════════════════════════════
+// 🇪🇺 유럽인증 / 🔧 미운영 - 예약 모달 특수 옵션 처리
+// ══════════════════════════════════════════════════════════════
+
+// 두 체크박스(미운영/유럽인증)는 상호 배타적
+function onSpecialTypeChange(which) {
+  const oos = document.getElementById('f_outOfService');
+  const eu = document.getElementById('f_euCert');
+  if (which === 'outofservice' && oos.checked) eu.checked = false;
+  if (which === 'eucert' && eu.checked) oos.checked = false;
+}
 
 // ══════════════════════════════════════════════════════════════
 // 🚫 날짜 전체 블락 모달
