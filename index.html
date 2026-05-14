@@ -386,6 +386,8 @@ table.gt th,table.gt td{border:1px solid var(--bl);text-align:center;vertical-al
 .btn-edit:hover{background:var(--ah);}
 .btn-del{background:none;border:1px solid #c43e1c;color:#c43e1c;padding:5px 14px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;}
 .btn-del:hover{background:#fdf0ee;}
+.btn-transfer{background:none;border:1px solid #7b5ea7;color:#7b5ea7;padding:5px 14px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;}
+.btn-transfer:hover{background:#f5f0fc;}
 
 /* Loading Overlay */
 .loading-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;}
@@ -2334,24 +2336,28 @@ function showDetail(id,e){
       <button class="btn-approve" onclick="approveEvent('${id}')">승인</button>
       <button class="btn-reject" onclick="rejectEvent('${id}')">반려</button>
       <button class="btn-edit" onclick="editEvent()">수정</button>
+      <button class="btn-transfer" onclick="">양도요청</button>
       <button class="btn-del" onclick="deleteEvent()">삭제</button>
     `;
   } else if (ev.status === 'pending' && !isAdminMode) {
     // 승인 대기 + 일반 사용자 → 수정만
     footer.innerHTML = `
       <button class="btn-edit" onclick="editEvent()">수정</button>
+      <button class="btn-transfer" onclick="">양도요청</button>
       <div style="font-size:10px;color:var(--tm);margin-top:8px;text-align:center;width:100%;">💡 승인/삭제는 관리자만 가능합니다</div>
     `;
   } else if (isAdminMode) {
     // 승인 완료/반려됨 + 관리자 → 수정/삭제
     footer.innerHTML = `
       <button class="btn-edit" onclick="editEvent()">수정</button>
+      <button class="btn-transfer" onclick="">양도요청</button>
       <button class="btn-del" onclick="deleteEvent()">삭제</button>
     `;
   } else {
     // 승인 완료/반려됨 + 일반 사용자 → 수정만
     footer.innerHTML = `
       <button class="btn-edit" onclick="editEvent()">수정</button>
+      <button class="btn-transfer" onclick="">양도요청</button>
       <div style="font-size:10px;color:var(--tm);margin-top:8px;text-align:center;width:100%;">💡 삭제는 관리자만 가능합니다</div>
     `;
   }
