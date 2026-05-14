@@ -1859,17 +1859,21 @@ document.addEventListener('keydown',e=>{
   const ae = document.activeElement;
   const isTyping = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT' || ae.isContentEditable);
 
+  // 한글 입력 모드 대응: e.key는 'ㅊ'/'ㅍ'이 될 수 있으므로 e.code도 함께 확인
+  const isC = e.key==='c' || e.key==='C' || e.code==='KeyC';
+  const isV = e.key==='v' || e.key==='V' || e.code==='KeyV';
+  const isZ = e.key==='z' || e.key==='Z' || e.code==='KeyZ';
+
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){if(isTyping)return;if(!selection&&!cursor)return;e.preventDefault();const dMap={ArrowUp:{ri:-1,col:0},ArrowDown:{ri:1,col:0},ArrowLeft:{ri:0,col:-1},ArrowRight:{ri:0,col:1}};const{ri,col}=dMap[e.key];moveKey(ri,col,e.shiftKey);return;}
   if(e.key==='Enter'&&selection&&!isTyping){e.preventDefault();openFromSelection();cursor=null;applyCursor();return;}
-  if((e.ctrlKey||e.metaKey)&&e.key==='z'){if(isTyping)return;e.preventDefault();undo();return;}
-  if((e.ctrlKey||e.metaKey)&&e.key==='c'){
+  if((e.ctrlKey||e.metaKey)&&isZ){if(isTyping)return;e.preventDefault();undo();return;}
+  if((e.ctrlKey||e.metaKey)&&isC){
     if(isTyping)return;
     console.log('[Ctrl+C] selectedId:', selectedId, 'copiedEvent:', copiedEvent?.title);
     if(selectedId){
       e.preventDefault();
       copySelectedEvent();
     } else if(copiedEvent){
-      // 이미 클릭으로 자동 복사된 상태
       e.preventDefault();
       showToast(`📋 "${copiedEvent.title}" 이미 복사됨 — 빈 셀 선택 후 Ctrl+V`);
     } else {
@@ -1877,7 +1881,7 @@ document.addEventListener('keydown',e=>{
     }
     return;
   }
-  if((e.ctrlKey||e.metaKey)&&e.key==='v'){
+  if((e.ctrlKey||e.metaKey)&&isV){
     if(isTyping)return;
     console.log('[Ctrl+V] copiedEvent:', copiedEvent?.title, 'selection:', selection, 'cursor:', cursor);
     e.preventDefault();
