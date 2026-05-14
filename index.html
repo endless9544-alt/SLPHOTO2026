@@ -1862,8 +1862,28 @@ document.addEventListener('keydown',e=>{
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){if(isTyping)return;if(!selection&&!cursor)return;e.preventDefault();const dMap={ArrowUp:{ri:-1,col:0},ArrowDown:{ri:1,col:0},ArrowLeft:{ri:0,col:-1},ArrowRight:{ri:0,col:1}};const{ri,col}=dMap[e.key];moveKey(ri,col,e.shiftKey);return;}
   if(e.key==='Enter'&&selection&&!isTyping){e.preventDefault();openFromSelection();cursor=null;applyCursor();return;}
   if((e.ctrlKey||e.metaKey)&&e.key==='z'){if(isTyping)return;e.preventDefault();undo();return;}
-  if((e.ctrlKey||e.metaKey)&&e.key==='c'){if(isTyping)return;if(selectedId){e.preventDefault();copySelectedEvent();}return;}
-  if((e.ctrlKey||e.metaKey)&&e.key==='v'){if(isTyping)return;e.preventDefault();pasteToSelection();return;}
+  if((e.ctrlKey||e.metaKey)&&e.key==='c'){
+    if(isTyping)return;
+    console.log('[Ctrl+C] selectedId:', selectedId, 'copiedEvent:', copiedEvent?.title);
+    if(selectedId){
+      e.preventDefault();
+      copySelectedEvent();
+    } else if(copiedEvent){
+      // 이미 클릭으로 자동 복사된 상태
+      e.preventDefault();
+      showToast(`📋 "${copiedEvent.title}" 이미 복사됨 — 빈 셀 선택 후 Ctrl+V`);
+    } else {
+      showToast('먼저 예약 블록을 클릭하세요');
+    }
+    return;
+  }
+  if((e.ctrlKey||e.metaKey)&&e.key==='v'){
+    if(isTyping)return;
+    console.log('[Ctrl+V] copiedEvent:', copiedEvent?.title, 'selection:', selection, 'cursor:', cursor);
+    e.preventDefault();
+    pasteToSelection();
+    return;
+  }
   if((e.key==='Delete'||e.key==='Backspace')&&!isTyping){
     // 광학 탭이 활성화되어 있고 광학 일정이 선택된 경우
     const opticsActive = document.getElementById('panel-optics').classList.contains('active');
@@ -2132,7 +2152,23 @@ function openEditModal(id){
 // ── COPY / PASTE ──
 let copiedEvent=null,pasteMode=false;
 function showToast(msg,duration=2200){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),duration);}
-function copySelectedEvent(id){const targetId=id||selectedId;if(!targetId)return;const ev=events.find(e=>e.id===targetId);if(!ev)return;copiedEvent={...ev};pasteMode=false;refreshCopyHighlight();showToast(`📋 "${ev.title}" 복사됨 — 셀 선택 후 Ctrl+V`);}
+function copySelectedEvent(id){
+  const targetId=id||selectedId;
+  console.log('[copySelectedEvent] targetId:', targetId, 'selectedId:', selectedId);
+  if(!targetId){
+    showToast('먼저 예약 블록을 클릭하세요');
+    return;
+  }
+  const ev=events.find(e=>e.id===targetId);
+  if(!ev){
+    console.warn('[copySelectedEvent] 이벤트 없음');
+    return;
+  }
+  copiedEvent={...ev};
+  pasteMode=false;
+  refreshCopyHighlight();
+  showToast(`📋 "${ev.title}" 복사됨 — 빈 셀 클릭 후 Ctrl+V`);
+}
 
 // 복사 + 붙여넣기 모드 즉시 진입 (상세 팝업의 📋 버튼)
 function copyAndPaste(){
@@ -2147,11 +2183,17 @@ function copyAndPaste(){
 }
 function refreshCopyHighlight(){document.querySelectorAll('.ev-block.copied').forEach(el=>el.classList.remove('copied'));if(!copiedEvent)return;document.querySelectorAll(`.ev-block[data-evid="${copiedEvent.id}"]`).forEach(el=>el.classList.add('copied'));}
 function pasteToSelection(){
+  console.log('[pasteToSelection] copiedEvent:', copiedEvent?.title, 'selection:', selection, 'cursor:', cursor, 'pasteMode:', pasteMode);
   if(!copiedEvent){showToast('먼저 예약 블록을 클릭하세요');return;}
   let target=null;
   if(selection)target={room:selection.room,date:selection.date,shift:selection.shift,startRi:selection.startRi};
   else if(cursor)target={room:cursor.room,date:cursor.date,shift:cursor.shift,startRi:cursor.ri};
-  else{showToast('붙여넣을 셀을 먼저 클릭하세요');return;}
+  else {
+    // 선택된 셀이 없으면 paste-ready 모드로 진입 (빈 셀에 점선 표시)
+    enterPasteMode();
+    return;
+  }
+  console.log('[pasteToSelection] target:', target);
   pasteEvent(target.room,target.date,target.shift,target.startRi);clearSelection();cursor=null;applyCursor();
 }
 function enterPasteMode(){if(!copiedEvent){showToast('먼저 예약을 복사하세요');return;}pasteMode=true;showToast('📌 붙여넣을 빈 셀을 클릭하세요 (Esc: 취소)',4000);applyPasteReady();}
