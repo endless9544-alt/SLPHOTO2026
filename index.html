@@ -2541,8 +2541,8 @@ function switchTab(tab) {
 // ══════════════════════════════════════════════════════════════
 
 const OPTICS_ROOMS = [
-  { id: 2, name: '2배광실', color: '#0e6b0e', bg: '#c8e6c8' },
-  { id: 3, name: '3배광실', color: '#b03018', bg: '#f5cec8' },
+  { id: 2, name: '프론트', color: '#0e6b0e', bg: '#c8e6c8' },
+  { id: 3, name: '시그널', color: '#b03018', bg: '#f5cec8' },
 ];
 const OPTICS_TIME = '17:00~20:00';
 const DAYS_KO2 = ['일','월','화','수','목','금','토'];
@@ -2904,7 +2904,7 @@ function buildOpticsTable() {
   const tr = document.createElement('tr');
   let th = document.createElement('th');
   th.className = 'ot-th-corner';
-  th.textContent = '대상장비';
+  th.textContent = '팀구분';
   th.rowSpan = 1;
   tr.appendChild(th);
 
