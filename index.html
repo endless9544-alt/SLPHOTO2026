@@ -139,6 +139,20 @@ table.gt th,table.gt td{border:1px solid var(--bl);text-align:center;vertical-al
 
 /* 배광실 이름 */
 .td-room{font-size:12px;font-weight:700;padding:6px 10px;text-align:left;vertical-align:middle;white-space:nowrap;border-right:2px solid var(--border)!important;min-width:80px;}
+/* 배광실 센서 전용 배지 (4배광실 3.16m 전용) */
+.sensor-only-badge{
+  margin-top:10px;
+  background:#e81123;
+  color:#fff;
+  font-size:11px;
+  font-weight:700;
+  text-align:center;
+  padding:5px 4px;
+  border-radius:4px;
+  line-height:1.3;
+  letter-spacing:.3px;
+  box-shadow:0 1px 3px rgba(232,17,35,.3);
+}
 /* 오전/오후 */
 .td-ampm{font-size:11px;font-weight:700;text-align:center;vertical-align:middle;padding:0 5px;white-space:nowrap;width:28px;min-width:28px;border-right:1px solid var(--bl)!important;}
 .td-ampm.pm{border-top:2px solid var(--border)!important;}
@@ -1555,7 +1569,7 @@ function buildTable(){
     
     ROWS.forEach((rowDef,rowIdx)=>{
       const tr=document.createElement('tr');const isPM=rowIdx>=4;const isFirstPM=rowIdx===4;
-      if(rowIdx===0){const td=document.createElement('td');td.rowSpan=8;td.className='td-room';td.style.cssText=`background:${room.bg};color:${room.color};border-top:2px solid ${room.color};`;td.innerHTML=`<span style="margin-right:3px">☑</span><b>${room.name}</b><br><span style="font-size:9px;font-weight:400;opacity:.7">${cnt}건</span>`;tr.appendChild(td);}
+      if(rowIdx===0){const td=document.createElement('td');td.rowSpan=8;td.className='td-room';td.style.cssText=`background:${room.bg};color:${room.color};border-top:2px solid ${room.color};`;const sensorBadge=room.id===4?`<div class="sensor-only-badge">3.16m<br>전용</div>`:'';td.innerHTML=`<span style="margin-right:3px">☑</span><b>${room.name}</b><br><span style="font-size:9px;font-weight:400;opacity:.7">${cnt}건</span>${sensorBadge}`;tr.appendChild(td);}
       if(rowIdx===0||rowIdx===4){const td=document.createElement('td');td.rowSpan=4;td.className='td-ampm'+(isFirstPM?' pm':'');td.style.cssText=`background:${mix(room.bg,'#f0efee',.45)};color:${room.color};`;td.textContent=isPM?'오후':'오전';tr.appendChild(td);}
       const tdT=document.createElement('td');tdT.className='td-time'+(isFirstPM?' pm':'');tdT.innerHTML=`<span class="td">${rowDef.dTime}</span><br><span class="tn">(${rowDef.nTime})</span>`;tr.appendChild(tdT);
       days.forEach(d=>{
