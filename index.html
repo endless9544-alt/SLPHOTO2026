@@ -1388,6 +1388,7 @@ function setupDayBlocksListener() {
     snap.forEach(d => { dayBlocks[d.id] = d.data(); });
     buildTable();
     renderMiniCal();
+    renderStats();
   });
 }
 
@@ -1998,14 +1999,18 @@ function renderFilters(){document.getElementById('filterList').innerHTML=ROOMS.m
 function toggleRoom(id,cb){if(cb.checked)visibleRooms.add(id);else visibleRooms.delete(id);buildTable();renderStats();}
 function renderStats(){
   const wd=getWeekDays().map(d=>fmtDate(d));
-  const TOTAL_DAY=8*5,TOTAL_NIGHT=8*5;
+  // 블락되지 않은 날만 집계 대상 (공휴일/창립기념일 등 블락 시 해당 날짜 차감)
+  const availableDates=wd.filter(d=>!dayBlocks[d]);
+  const availableDays=availableDates.length;
+  const TOTAL_DAY=8*availableDays,TOTAL_NIGHT=8*availableDays;
   function evHours(ev){const sMap=ev.shift==='day'?DAY_START_TO_RI:NIGHT_START_TO_RI;const eMap=ev.shift==='day'?DAY_END_TO_RI:NIGHT_END_TO_RI;return(eMap[ev.endTime]??0)-(sMap[ev.startTime]??0)+1;}
   const html=ROOMS.filter(r=>visibleRooms.has(r.id)).map(r=>{
-    const evs=events.filter(e=>e.room===r.id&&wd.includes(e.date)&&visibleStatuses.has(e.status||'pending'));
+    // 블락되지 않은 날짜의 예약만 집계
+    const evs=events.filter(e=>e.room===r.id&&availableDates.includes(e.date)&&visibleStatuses.has(e.status||'pending'));
     const usedDay=evs.filter(e=>e.shift==='day').reduce((s,e)=>s+evHours(e),0);
     const usedNight=evs.filter(e=>e.shift==='night').reduce((s,e)=>s+evHours(e),0);
     const remDay=Math.max(0,TOTAL_DAY-usedDay),remNight=Math.max(0,TOTAL_NIGHT-usedNight),remAll=remDay+remNight;
-    const pctDay=Math.round((remDay/TOTAL_DAY)*100),pctNight=Math.round((remNight/TOTAL_NIGHT)*100);
+    const pctDay=TOTAL_DAY>0?Math.round((remDay/TOTAL_DAY)*100):0,pctNight=TOTAL_NIGHT>0?Math.round((remNight/TOTAL_NIGHT)*100):0;
     const barColor=p=>p>50?'#107c10':p>25?'#d97706':'#c43e1c';
     return `<div class="st-item"><div class="st-head"><span class="st-lbl" style="color:${r.color};font-weight:700;">${r.name}</span><span class="st-val" style="color:${remAll===0?'#c43e1c':remAll<8?'#d97706':'#107c10'}">잔여 ${remAll}h</span></div>
     <div style="display:flex;gap:4px;margin-bottom:4px;">
@@ -2506,6 +2511,7 @@ async function submitBlock() {
   closeBlockModal();
   buildTable();
   renderMiniCal();
+  renderStats();
   showToast(`🚫 ${_blockTargetDate} 블락 설정 — ${reason}`);
 }
 
@@ -2516,6 +2522,7 @@ async function removeBlock() {
   closeBlockModal();
   buildTable();
   renderMiniCal();
+  renderStats();
   showToast(`✅ ${dateStr} 블락 해제됨`);
 }
 
