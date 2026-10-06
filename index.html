@@ -454,13 +454,18 @@ table.gt th,table.gt td{border:1px solid var(--bl);text-align:center;vertical-al
   z-index:6;
 }
 .ev-block.status-eucert::before{
-  content:'🇪🇺';
+  content:'EC';
   position:absolute;
   top:2px; left:5px;
-  font-size:11px;
+  font-size:10px;
+  font-weight:800;
+  color:#fff;
+  background:rgba(255,255,255,.2);
+  padding:1px 4px;
+  border-radius:2px;
 }
 .ev-block.status-eucert::after{
-  content:'인증';
+  content:'본인증';
   position:absolute;
   top:2px; right:3px;
   font-size:9px;
@@ -789,7 +794,7 @@ table.ot th,table.ot td{border:1px solid var(--bl);white-space:nowrap;}
           </label>
           <label class="f-row">
             <input type="checkbox" checked onchange="toggleStatus('eucert',this)">
-            <div class="f-dot eucert-dot"></div>🇪🇺 유럽인증
+            <div class="f-dot eucert-dot"></div>EC 유럽 본인증
           </label>
         </div>
       </div>
@@ -878,9 +883,9 @@ table.ot th,table.ot td{border:1px solid var(--bl);white-space:nowrap;}
       <div class="frow" id="euCertRow" style="display:none;">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
           <input type="checkbox" id="f_euCert" style="width:16px;height:16px;" onchange="onSpecialTypeChange('eucert')">
-          <span>🇪🇺 유럽인증 (인증관 입회 시험)</span>
+          <span>EC 유럽 본인증 (인증관 입회 시험)</span>
         </label>
-        <div style="font-size:10px;color:#1565c0;margin-top:4px;padding-left:24px;">※ 유럽인증으로 설정하면 진한 파란색으로 강조 표시됩니다</div>
+        <div style="font-size:10px;color:#1565c0;margin-top:4px;padding-left:24px;">※ EC 유럽 본인증으로 설정하면 진한 파란색으로 강조 표시됩니다</div>
       </div>
       <div class="frow"><label>비고</label><textarea id="f_note" placeholder="특이사항 (선택)"></textarea></div>
     </div>
@@ -2068,7 +2073,7 @@ async function submitReservation(){
     finalManager = '관리자';
   } else if (isEuCert) {
     // 유럽인증은 title을 인증명으로 사용. 비어있으면 기본값
-    if (!finalTitle) finalTitle = '유럽인증';
+    if (!finalTitle) finalTitle = 'EC 유럽 본인증';
     if (!finalDept) finalDept = '인증팀';
   }
 
@@ -2120,7 +2125,7 @@ async function submitReservation(){
     await addEventToFirestore(newEvent);
 
     if (isEuCert) {
-      showToast('🇪🇺 유럽인증 일정이 등록되었습니다');
+      showToast('✓ EC 유럽 본인증 일정이 등록되었습니다');
     } else if (isOutOfService) {
       showToast('🔧 미운영 일정이 등록되었습니다');
     } else if (isAdminMode) {
@@ -2150,7 +2155,7 @@ function selectBlock(id,e){
   if(ev.status === 'outofservice') {
     showToast(`📋 미운영 일정 선택됨 — 관리자만 붙여넣기 가능`);
   } else if(ev.status === 'eucert') {
-    showToast(`🇪🇺 유럽인증 선택됨 — 📋 버튼으로 복사하세요`);
+    showToast(`EC 유럽 본인증 선택됨 — 📋 버튼으로 복사하세요`);
   } else {
     showToast(`📋 "${copiedEvent.title}" 선택됨 — 붙여넣을 셀을 클릭 후 Ctrl+V`);
   }
@@ -2280,7 +2285,7 @@ async function pasteEvent(room,date,shift,startRi){
   }
   // 유럽인증은 관리자만 붙여넣기 가능
   if(copiedEvent.status === 'eucert' && !isAdminMode) {
-    showToast('⚠️ 유럽인증 일정은 관리자만 복사할 수 있습니다');
+    showToast('⚠️ EC 유럽 본인증 일정은 관리자만 복사할 수 있습니다');
     return;
   }
 
@@ -2335,7 +2340,7 @@ async function pasteEvent(room,date,shift,startRi){
   if(copiedEvent.status === 'outofservice') {
     showToast(`🔧 미운영 일정 복사됨 → ${date} ${shiftLbl} ${startTime}~${endTime}`);
   } else if(copiedEvent.status === 'eucert') {
-    showToast(`🇪🇺 유럽인증 복사됨 → ${date} ${shiftLbl} ${startTime}~${endTime}`);
+    showToast(`✓ EC 유럽 본인증 복사됨 → ${date} ${shiftLbl} ${startTime}~${endTime}`);
   } else if(hrs<span){
     showToast(`✅ "${newEv.title}" → ${date} ${shiftLbl} ${startTime}~${endTime} (원본 ${span}h → ${hrs}h로 축소)`);
   } else {
@@ -2362,7 +2367,7 @@ function showDetail(id,e){
     'approved': '✓ 승인 완료',
     'rejected': '✕ 반려됨',
     'outofservice': '🔧 미운영',
-    'eucert': '🇪🇺 유럽인증'
+    'eucert': 'EC 유럽 본인증'
   };
   const statusClass = ev.status || 'pending';
   const statusBadge = `<div class="status-badge ${statusClass}">${statusText[statusClass]}</div>`;
