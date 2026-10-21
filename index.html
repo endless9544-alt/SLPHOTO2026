@@ -699,11 +699,11 @@ table.ot th,table.ot td{border:1px solid var(--bl);white-space:nowrap;}
 .ot-dh-sub{font-size:10px;color:var(--tm);margin-top:2px;}
 .ot-df{padding:7px 11px;border-top:1px solid #eee;display:flex;gap:6px;justify-content:flex-end;}
 /* 주간 08:00~09:00 긴급 배광 전용 잠금 칸 */
-.td-slot.urgent-locked{background:repeating-linear-gradient(135deg,#fff4ec,#fff4ec 5px,#fde3d0 5px,#fde3d0 10px)!important;cursor:not-allowed;text-align:center;vertical-align:middle;padding:0 3px;overflow:hidden;}
+.td-slot.urgent-locked{background:repeating-linear-gradient(135deg,#f1f0ef,#f1f0ef 5px,#e4e2e0 5px,#e4e2e0 10px)!important;cursor:not-allowed;text-align:center;vertical-align:middle;padding:0 3px;overflow:hidden;}
 .td-slot.urgent-locked:hover{filter:none;}
-.urgent-locked .ul-tag{font-size:9px;font-weight:700;color:#c2410c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;}
+.urgent-locked .ul-tag{font-size:9px;font-weight:700;color:#6b6a69;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;}
 .urgent-locked .ul-tag.ul-empty{opacity:.6;font-weight:600;}
-.urgent-locked .ul-sub{font-size:8px;color:#9a3412;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;}
+.urgent-locked .ul-sub{font-size:8px;color:#8a8886;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;}
 
 /* ══════════ 설계 탭 ══════════ */
 .dz-section-hd{display:flex;align-items:baseline;gap:10px;margin:14px 12px 0;padding:8px 4px;border-top:2px solid #0f5c7a;border-bottom:2px solid #0f5c7a;}
@@ -1847,11 +1847,11 @@ function buildTable(){
           } else if(isUrgentLocked(shift,rowIdx)){
             td.classList.add('urgent-locked');
             let ue=null; try{ ue=dzEntries.find(x=>x.cat==='urgent'&&Number(x.room)===room.id&&x.date===dateStr); }catch(_){}
-            if(ue&&ue.status==='outofservice') td.innerHTML='<div class="ul-tag">⚡ 긴급 · 미운영</div>';
-            else if(ue) td.innerHTML=`<div class="ul-tag">⚡ ${dzEsc(ue.team||'긴급')}</div>${ue.car?`<div class="ul-sub">${dzEsc(ue.car)}</div>`:''}`;
-            else td.innerHTML='<div class="ul-tag ul-empty">⚡ 긴급 대응</div>';
-            td.title='08:00~09:00은 설계 탭 [긴급 배광 대응] 전용입니다';
-            td.addEventListener('click',()=>showToast('⚡ 08:00~09:00은 긴급 배광 전용입니다 — 설계 탭에서 예약하세요'));
+            if(ue&&ue.status==='outofservice') td.innerHTML='<div class="ul-tag">설계 대응 · 미운영</div>';
+            else if(ue) td.innerHTML=`<div class="ul-tag">${dzEsc(ue.team||'설계 대응')}</div>${ue.car?`<div class="ul-sub">${dzEsc(ue.car)}</div>`:''}`;
+            else td.innerHTML='<div class="ul-tag ul-empty">설계 대응</div>';
+            td.title='08:00~09:00은 설계 대응 시간입니다 (설계 탭에서 예약)';
+            td.addEventListener('click',()=>showToast('08:00~09:00은 설계 대응 시간입니다 — 설계 탭에서 예약하세요'));
           } else {td.addEventListener('mousedown',onMouseDown);td.addEventListener('mouseenter',onMouseEnter);td.addEventListener('mouseup',onMouseUp);}
           tr.appendChild(td);
         });
@@ -2097,7 +2097,7 @@ function confirmSelection(){
 function applySelection(){clearSelectionHighlight();if(!selection)return;const{room,date,shift,startRi,endRi}=selection;for(let ri=startRi;ri<=endRi;ri++){document.querySelectorAll(`.td-slot[data-room="${room}"][data-date="${date}"][data-shift="${shift}"][data-ri="${ri}"]`).forEach(c=>c.classList.add('selected'));}}
 function clearSelectionHighlight(){document.querySelectorAll('.td-slot.selected').forEach(c=>c.classList.remove('selected'));}
 function clearSelection(){clearSelectionHighlight();selection=null;}
-function openFromSelection(){if(!selection)return;let{room,date,shift,startRi,endRi}=selection;if(isUrgentLocked(shift,startRi)){if(endRi<1){showToast('⚡ 08:00~09:00은 긴급 배광 전용입니다 — 설계 탭에서 예약하세요');clearSelection();return;}startRi=1;}clearSelection();cursor=null;applyCursor();const{startTime,endTime}=riToTimes(shift,startRi,endRi);openModal({room,date,shift,startTime,endTime});}
+function openFromSelection(){if(!selection)return;let{room,date,shift,startRi,endRi}=selection;if(isUrgentLocked(shift,startRi)){if(endRi<1){showToast('08:00~09:00은 설계 대응 시간입니다 — 설계 탭에서 예약하세요');clearSelection();return;}startRi=1;}clearSelection();cursor=null;applyCursor();const{startTime,endTime}=riToTimes(shift,startRi,endRi);openModal({room,date,shift,startTime,endTime});}
 function applyPreview(){clearPreview();if(!drag)return;for(let ri=drag.startRi;ri<=drag.endRi;ri++){document.querySelectorAll(`.td-slot[data-room="${drag.room}"][data-date="${drag.date}"][data-shift="${drag.shift}"][data-ri="${ri}"]`).forEach(c=>c.classList.add('drag-preview'));}}
 function clearPreview(){document.querySelectorAll('.td-slot.drag-preview').forEach(c=>c.classList.remove('drag-preview'));}
 function clearDrag(){clearPreview();drag=null;}
@@ -2519,7 +2519,7 @@ async function pasteEvent(room,date,shift,startRi){
     return;
   }
 
-  if(isUrgentLocked(shift,startRi)){ showToast('⚡ 08:00~09:00은 긴급 배광 전용입니다'); return; }
+  if(isUrgentLocked(shift,startRi)){ showToast('08:00~09:00은 설계 대응 시간입니다'); return; }
   const{startRi:origStart,endRi:origEnd}=evToRi(copiedEvent);
   const span=origEnd-origStart+1;
   let endRi=startRi+span-1;
