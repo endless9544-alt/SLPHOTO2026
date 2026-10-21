@@ -1240,7 +1240,7 @@ table.dz-tbl .ot-td-cell:hover{background:rgba(15,92,122,.06);}
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, query, where, updateDoc, addDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, query, where, orderBy, limit, updateDoc, addDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 // Firebase 설정
 const firebaseConfig = {
@@ -1269,6 +1269,8 @@ window.firestoreDB = {
   onSnapshot,
   query,
   where,
+  orderBy,
+  limit,
   updateDoc,
   addDoc
 };
@@ -1513,30 +1515,66 @@ async function deleteEventFromFirestore(eventId) {
 }
 
 // 실시간 리스너 설정
-function setupFirestoreListener() {
-  const { db, collection, onSnapshot } = window.firestoreDB;
-  const eventsCol = collection(db, 'events');
-  
-  unsubscribeSnapshot = onSnapshot(eventsCol, (snapshot) => {
-    events = [];
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-      events.push({ id: doc.id, ...data, status: data.status || 'pending' });
+// ══════════════════════════════════════════════════════════════
+// 📦 주 단위 구독: 화면에 보이는 주의 데이터만 실시간으로 받음 (읽기 절감)
+//   - 주를 넘기면 그 주를 새로 구독, 최근 본 주는 최대 WEEK_CACHE_MAX개까지 유지
+//   - 저장 전에는 해당 날짜의 주를 먼저 불러와서 겹침 검사 (중복 예약 방지)
+// ══════════════════════════════════════════════════════════════
+const WEEK_CACHE_MAX = 8;
+function makeWeekStore(colName, normalize, onChange) {
+  const subs = new Map(); // 'YYYY-MM-DD'(월요일) → { docs, unsub, ready, loaded }
+  function ensure(dateLike) {
+    const d = (typeof dateLike === 'string') ? new Date(dateLike + 'T00:00:00') : dateLike;
+    const mon = getMonday(d);
+    const key = fmtDate(mon);
+    if (subs.has(key)) { const e = subs.get(key); subs.delete(key); subs.set(key, e); return e.ready; }
+    const sun = new Date(mon); sun.setDate(sun.getDate() + 6);
+    const { db, collection, query, where, onSnapshot } = window.firestoreDB;
+    const entry = { docs: new Map(), loaded: false };
+    entry.ready = new Promise(res => { entry._res = res; });
+    const q = query(collection(db, colName), where('date', '>=', key), where('date', '<=', fmtDate(sun)));
+    entry.unsub = onSnapshot(q, snap => {
+      const m = new Map();
+      snap.forEach(doc => m.set(doc.id, normalize(doc)));
+      entry.docs = m;
+      const first = !entry.loaded;
+      entry.loaded = true; entry._res();
+      onChange(first, null);
+    }, err => {
+      console.error(`${colName} 구독 오류:`, err);
+      entry.loaded = true; entry._res();
+      onChange(true, err);
     });
-    if (!isFirestoreReady) {
-      // 첫 수신: 별도 getDocs 없이 실시간 동기화가 초기 로드를 담당 (읽기 횟수 절반)
-      isFirestoreReady = true;
-      console.log(`✅ Firestore에서 ${events.length}개 이벤트 로드됨`);
-      updateSyncStatus('connected');
-      showLoading(false);
+    subs.set(key, entry);
+    while (subs.size > WEEK_CACHE_MAX) {
+      const [oldKey, old] = subs.entries().next().value;
+      old.unsub(); subs.delete(oldKey);
     }
-    buildTable();
-    renderStats();
-  }, (error) => {
-    console.error('❌ Firestore 리스너 오류:', error);
-    showToast('⚠️ 데이터 로드 실패: ' + error.message);
-    showLoading(false);
-  });
+    return entry.ready;
+  }
+  function all() {
+    const m = new Map();
+    subs.forEach(e => e.docs.forEach((v, k) => m.set(k, v)));
+    return [...m.values()];
+  }
+  return { ensure, all };
+}
+
+let evStore = null;
+function setupFirestoreListener() {
+  evStore = makeWeekStore('events',
+    d => { const data = d.data(); return { id: d.id, ...data, status: data.status || 'pending' }; },
+    (first, err) => {
+      events = evStore.all();
+      if (!isFirestoreReady) {
+        isFirestoreReady = true;
+        if (err) showToast('⚠️ 데이터 로드 실패: ' + err.message);
+        else { console.log(`✅ 이번 주 예약 ${events.length}건 로드됨`); updateSyncStatus('connected'); }
+        showLoading(false);
+      }
+      buildTable();
+      renderStats();
+    });
 }
 
 // ── dayBlocks Firestore CRUD ──
@@ -2277,6 +2315,7 @@ async function submitReservation(){
     return;
   }
 
+  if(evStore&&date){await evStore.ensure(date);events=evStore.all();} // 다른 주 날짜도 겹침 검사 가능하도록
   const sMap=shift==='day'?DAY_START_TO_RI:NIGHT_START_TO_RI;const eMap=shift==='day'?DAY_END_TO_RI:NIGHT_END_TO_RI;const newS=sMap[startTime]??0,newE=eMap[endTime]??0;
   const conflict=events.filter(e=>{
     if(e.id===editingId||e.room!==room||e.date!==date||e.shift!==shift)return false;
@@ -2723,7 +2762,7 @@ async function removeBlock() {
   showToast(`✅ ${dateStr} 블락 해제됨`);
 }
 
-function render(){document.getElementById('weekLbl').textContent=curWeekLabel();buildTable();renderMiniCal();renderFilters();renderStats();}
+function render(){if(evStore)evStore.ensure(currentMonday);if(typeof dzEntStore!=='undefined'&&dzEntStore)dzEntStore.ensure(currentMonday);document.getElementById('weekLbl').textContent=curWeekLabel();buildTable();renderMiniCal();renderFilters();renderStats();}
 function changeWeek(dir){currentMonday.setDate(currentMonday.getDate()+dir*7);render();}
 function goToday(){currentMonday=getMonday(new Date());render();}
 
@@ -2743,6 +2782,7 @@ function switchTab(tab) {
     const el = document.getElementById(id);
     if (el) el.style.display = (k === tab) ? 'flex' : 'none';
   });
+  if (tab === 'reserve') render();
   if (tab === 'optics') opticsRender();
   if (tab === 'design') dzRender();
 }
@@ -2887,6 +2927,7 @@ async function restoreFromTrash(id) {
   const trashItem = opticsTrash.find(t => t.id === id);
   if (!trashItem) return;
 
+  if (opStore) { await opStore.ensure(trashItem.date); opticsEntries = opStore.all(); }
   const conflict = opticsEntries.find(e => Number(e.room) === Number(trashItem.room) && e.date === trashItem.date);
   if (conflict) {
     alert(`복구할 수 없습니다.\n\n해당 날짜(${trashItem.date}, ${trashItem.room}배광실)에 이미 다른 일정이 등록되어 있습니다.`);
@@ -3017,7 +3058,23 @@ function openHistModal(filterEntryId) {
     label.textContent = '— 전체';
   }
   overlay.classList.add('open');
-  renderHistList(filterEntryId);
+  document.getElementById('histBody').innerHTML = '<div class="hist-empty">⏳ 히스토리 불러오는 중...</div>';
+  loadOpticsHistory(filterEntryId)
+    .then(() => renderHistList(filterEntryId))
+    .catch(err => { document.getElementById('histBody').innerHTML = `<div class="hist-empty">⚠️ 히스토리 로드 실패: ${err.message}</div>`; });
+}
+
+// 히스토리는 모달을 열 때만 조회 (항상 실시간 수신하지 않음 → 읽기 절감)
+async function loadOpticsHistory(filterEntryId) {
+  const { db, collection, getDocs, query, where, orderBy, limit } = window.firestoreDB;
+  const col = collection(db, 'opticsHistory');
+  const q = filterEntryId ? query(col, where('entryId', '==', filterEntryId))
+                          : query(col, orderBy('ts', 'desc'), limit(200));
+  const snap = await getDocs(q);
+  const arr = [];
+  snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
+  arr.sort((a, b) => b.ts - a.ts);
+  opticsHistory = arr;
 }
 
 function closeHistModal() {
@@ -3071,23 +3128,16 @@ function renderHistList(filterEntryId) {
   }).join('')}</div>`;
 }
 
-// 실시간 리스너 - 광학
+// 실시간 리스너 - 광학 (보이는 주만 구독)
+let opStore = null;
 function setupOpticsListener() {
-  const { db, collection, onSnapshot } = window.firestoreDB;
-  onSnapshot(collection(db, 'opticsEntries'), snap => {
-    opticsEntries = [];
-    snap.forEach(doc => {
-      const data = doc.data();
-      opticsEntries.push({
-        id: doc.id,
-        ...data,
-        room: Number(data.room) // 항상 Number로 통일
-      });
+  opStore = makeWeekStore('opticsEntries',
+    d => { const data = d.data(); return { id: d.id, ...data, room: Number(data.room) }; },
+    () => {
+      opticsEntries = opStore.all();
+      if (document.getElementById('panel-optics').classList.contains('active')) buildOpticsTable();
     });
-    if (document.getElementById('panel-optics').classList.contains('active')) {
-      buildOpticsTable();
-    }
-  });
+  opStore.ensure(opticsMonday);
 }
 
 // 광학 주간 날짜 (월~금)
@@ -3287,7 +3337,8 @@ async function submitOpticsEntry() {
     return;
   }
 
-  // 중복 체크
+  // 중복 체크 (다른 주 날짜도 확인할 수 있도록 해당 주를 먼저 불러옴)
+  if (opStore) { await opStore.ensure(date); opticsEntries = opStore.all(); }
   if (!opticsEditingId) {
     const dup = opticsEntries.find(e => Number(e.room) === room && e.date === date);
     if (dup) {
@@ -3334,12 +3385,18 @@ async function clearAllOpticsData() {
     showToast('⚠️ 관리자만 사용할 수 있습니다');
     return;
   }
-  if (!confirm(`Firestore의 모든 광학 일정을 삭제합니다.\n현재 ${opticsEntries.length}개의 데이터가 있습니다.\n계속하시겠습니까?`)) return;
+  let allIds = [];
+  try {
+    const { db, collection, getDocs } = window.firestoreDB;
+    const snap = await getDocs(collection(db, 'opticsEntries'));
+    snap.forEach(d => allIds.push(d.id));
+  } catch(e) { alert('광학 데이터 조회 실패: ' + e.message); return; }
+  if (!confirm(`Firestore의 모든 광학 일정을 삭제합니다.\n현재 ${allIds.length}개의 데이터가 있습니다.\n계속하시겠습니까?`)) return;
 
   try {
     const { db, doc, deleteDoc } = window.firestoreDB;
-    for (const entry of [...opticsEntries]) {
-      await deleteDoc(doc(db, 'opticsEntries', entry.id));
+    for (const id of allIds) {
+      await deleteDoc(doc(db, 'opticsEntries', id));
     }
     opticsEntries = [];
     buildOpticsTable();
@@ -3694,6 +3751,7 @@ document.addEventListener('click', e => {
 });
 
 function opticsRender() {
+  if (opStore) opStore.ensure(opticsMonday);
   const lbl = opticsWeekLabel();
   // 패널 내 라벨(id=opticsWeekLbl)은 이제 없으므로 topbar 라벨만 업데이트
   const topLbl = document.getElementById('opticsWeekLblTop');
@@ -3713,9 +3771,16 @@ function opticsGoToday() {
 // ── 기존 주간 08:00 시작 예약 → 09:00 일괄 변경 (관리자 로그인 시 1회 확인) ──
 async function migrateDay8am(){
   if(!isAdminMode) return;
+  try{ if(localStorage.getItem('mig8am_done')==='1') return; }catch(_){}
   const today=fmtDate(new Date());
-  const targets=events.filter(e=>e.shift==='day'&&e.startTime==='08:00'&&e.date>=today);
-  if(!targets.length) return;
+  const targets=[];
+  try{
+    const {db,collection,getDocs,query,where}=window.firestoreDB;
+    const snap=await getDocs(query(collection(db,'events'),where('date','>=',today)));
+    snap.forEach(d=>{const e={id:d.id,...d.data()};if(e.shift==='day'&&e.startTime==='08:00')targets.push(e);});
+  }catch(err){ console.error('08:00 예약 조회 실패:',err); return; }
+  const markDone=()=>{ try{ localStorage.setItem('mig8am_done','1'); }catch(_){} };
+  if(!targets.length){ markDone(); return; }
   const movable=targets.filter(e=>e.endTime!=='09:00');
   const oneHour=targets.filter(e=>e.endTime==='09:00');
   let msg=`[주간 08:00~09:00 → 긴급 배광 전용 전환]\n\n오늘(${today}) 이후 08:00에 시작하는 주간 예약이 ${targets.length}건 있습니다.\n\n• 시작시간 08:00 → 09:00 변경: ${movable.length}건`;
@@ -3727,6 +3792,7 @@ async function migrateDay8am(){
     try{ ev.startTime='09:00'; await updateEventInFirestore(ev); ok++; }
     catch(err){ fail++; console.error('08:00→09:00 변경 실패:', ev.id, err); }
   }
+  if(!fail) markDone();
   buildTable(); renderStats();
   showToast(`✅ ${ok}건 09:00 시작으로 변경 완료${fail?` (실패 ${fail}건)`:''}`, 4000);
   if(oneHour.length){
@@ -3751,6 +3817,7 @@ const DZ_CAT = {
 let dzMonday = getMonday(new Date());
 let dzEntries = [], dzTrash = [], dzHistory = [];
 let dzEditingId = null, dzSelectedId = null, dzModalCat = 'urgent', dzHistFilter = null;
+let dzEntStore = null;
 
 function dzEsc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function dzRoomName(cat, room){ return cat === 'design' ? '전장설계' : `${room}배광실`; }
@@ -3766,21 +3833,17 @@ function dzNorm(d){ const data = d.data(); return { id: d.id, ...data, room: Num
 // ── Firestore ──
 function dzSetupListeners(){
   const { onSnapshot } = window.firestoreDB;
-  onSnapshot(dzCol('designEntries'), snap => {
-    dzEntries = []; snap.forEach(d => dzEntries.push(dzNorm(d)));
+  dzEntStore = makeWeekStore('designEntries', dzNorm, () => {
+    dzEntries = dzEntStore.all();
     if (dzIsActive()) dzBuildTables();
     if (document.getElementById('panel-reserve').classList.contains('active')) buildTable();
-  }, err => console.error('설계 데이터 로드 오류 (Firebase Rules 확인):', err));
+  });
+  dzEntStore.ensure(dzMonday);
   onSnapshot(dzCol('designTrash'), snap => {
     dzTrash = []; snap.forEach(d => dzTrash.push(dzNorm(d)));
     dzUpdateTrashBadge();
     if (document.getElementById('dzTrashOverlay').classList.contains('open')) dzRenderTrash();
   }, err => console.error('설계 휴지통 로드 오류:', err));
-  onSnapshot(dzCol('designHistory'), snap => {
-    dzHistory = []; snap.forEach(d => dzHistory.push({ id: d.id, ...d.data() }));
-    dzHistory.sort((a, b) => b.ts - a.ts);
-    if (document.getElementById('dzHistOverlay').classList.contains('open')) dzRenderHist();
-  }, err => console.error('설계 히스토리 로드 오류:', err));
 }
 async function dzSaveEntry(entry){
   const { db, doc, setDoc } = window.firestoreDB;
@@ -3812,6 +3875,7 @@ function dzWeekdays(){
   return Array.from({ length: 5 }, (_, i) => { const d = new Date(dzMonday); d.setDate(d.getDate() + i); return d; });
 }
 function dzRender(){
+  if (dzEntStore) dzEntStore.ensure(dzMonday);
   const lbl = document.getElementById('dzWeekLblTop');
   if (lbl) lbl.textContent = `${dzMonday.getMonth()+1}월 ${getWeekNum(dzMonday)}주`;
   dzBuildTables();
@@ -3977,6 +4041,7 @@ async function dzSubmit(){
   if (!isOOS && (!team || !manager)) { alert('⚠️ 팀과 담당자를 입력하세요.'); return; }
   if (!isAdminMode && !actor) { alert('⚠️ 이름을 입력하세요.'); document.getElementById('dz_author').focus(); return; }
 
+  if (dzEntStore) { await dzEntStore.ensure(date); dzEntries = dzEntStore.all(); }
   const dup = dzEntries.find(e => e.cat === cat && Number(e.room) === room && e.date === date && e.id !== dzEditingId);
   if (dup) {
     alert(`해당 칸에 이미 등록된 일정이 있습니다.\n\n• ${dzRoomName(cat, room)} / ${date}\n• 구분: ${dup.status === 'outofservice' ? '미운영' : (dup.team || '(팀 미지정)')}\n• 등록자: ${dup.author || '(미지정)'}`);
@@ -4185,6 +4250,7 @@ async function dzRestore(id){
   if (!isAdminMode) return;
   const t = dzTrash.find(x => x.id === id);
   if (!t) return;
+  if (dzEntStore) { await dzEntStore.ensure(t.date); dzEntries = dzEntStore.all(); }
   if (dzEntries.find(e => e.cat === t.cat && Number(e.room) === Number(t.room) && e.date === t.date)) {
     alert(`복구할 수 없습니다.\n\n${dzRoomName(t.cat, t.room)} ${t.date}에 이미 다른 일정이 있습니다.`);
     return;
@@ -4213,7 +4279,20 @@ function dzOpenHist(entryId){
     label.textContent = e ? `— ${dzRoomName(e.cat, e.room)} ${e.date}` : '';
   } else label.textContent = '— 전체';
   document.getElementById('dzHistOverlay').classList.add('open');
-  dzRenderHist();
+  document.getElementById('dzHistBody').innerHTML = '<div class="hist-empty">⏳ 히스토리 불러오는 중...</div>';
+  (async () => {
+    try {
+      const { db, collection, getDocs, query, where, orderBy, limit } = window.firestoreDB;
+      const col = collection(db, 'designHistory');
+      const q = dzHistFilter ? query(col, where('entryId', '==', dzHistFilter)) : query(col, orderBy('ts', 'desc'), limit(200));
+      const snap = await getDocs(q);
+      dzHistory = []; snap.forEach(d => dzHistory.push({ id: d.id, ...d.data() }));
+      dzHistory.sort((a, b) => b.ts - a.ts);
+      dzRenderHist();
+    } catch(err) {
+      document.getElementById('dzHistBody').innerHTML = `<div class="hist-empty">⚠️ 히스토리 로드 실패: ${dzEsc(err.message)}</div>`;
+    }
+  })();
 }
 function dzCloseHist(){ document.getElementById('dzHistOverlay').classList.remove('open'); }
 function dzRenderHist(){
@@ -4273,7 +4352,6 @@ window.addEventListener('load', async () => {
   setupFirestoreListener();
   setupOpticsListener();
   setupTrashListener();
-  setupHistoryListener();
   setupDayBlocksListener();
   dzSetupListeners();
   render();
