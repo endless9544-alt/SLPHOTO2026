@@ -698,6 +698,30 @@ table.ot th,table.ot td{border:1px solid var(--bl);white-space:nowrap;}
 .ot-dh-title{font-size:13px;font-weight:700;line-height:1.4;}
 .ot-dh-sub{font-size:10px;color:var(--tm);margin-top:2px;}
 .ot-df{padding:7px 11px;border-top:1px solid #eee;display:flex;gap:6px;justify-content:flex-end;}
+/* 주간 08:00~09:00 긴급 배광 전용 잠금 칸 */
+.td-slot.urgent-locked{background:repeating-linear-gradient(135deg,#fff4ec,#fff4ec 5px,#fde3d0 5px,#fde3d0 10px)!important;cursor:not-allowed;text-align:center;vertical-align:middle;padding:0 3px;overflow:hidden;}
+.td-slot.urgent-locked:hover{filter:none;}
+.urgent-locked .ul-tag{font-size:9px;font-weight:700;color:#c2410c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;}
+.urgent-locked .ul-tag.ul-empty{opacity:.6;font-weight:600;}
+.urgent-locked .ul-sub{font-size:8px;color:#9a3412;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;}
+
+/* ══════════ 설계 탭 ══════════ */
+.dz-section-hd{display:flex;align-items:baseline;gap:10px;margin:14px 12px 0;padding:8px 4px;border-top:2px solid #0f5c7a;border-bottom:2px solid #0f5c7a;}
+.dz-section-hd .dz-sec-title{font-size:15px;font-weight:800;color:#0f3d52;}
+.dz-section-hd .dz-sec-time{font-size:13px;font-weight:600;color:#0f5c7a;}
+.dz-section-hd .dz-sec-desc{font-size:10px;color:var(--tm);margin-left:6px;}
+.dz-section-hd.urgent{border-color:#c2410c;}
+.dz-section-hd.urgent .dz-sec-title{color:#7c2d12;}
+.dz-section-hd.urgent .dz-sec-time{color:#c2410c;}
+table.dz-tbl .ot-card .oc-lbl{color:#0f5c7a;}
+table.dz-urgent .ot-td-cell,table.dz-urgent .ot-td-room{height:100px;}
+table.dz-urgent .ot-card{line-height:1.5;padding:6px 10px;}
+table.dz-urgent .ot-card .oc-lbl{color:#c2410c;}
+table.dz-tbl .ot-td-room{vertical-align:middle;}
+table.dz-tbl .ot-td-cell:hover{background:rgba(15,92,122,.06);}
+.dz-room-pill{display:inline-block;color:#fff;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;line-height:1.3;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.ot-card.dz-selected{outline:2px solid #0f5c7a !important;outline-offset:-2px;box-shadow:0 0 0 3px rgba(15,92,122,.2);}
+.dz-cat-badge{display:inline-block;font-size:9px;font-weight:700;color:#fff;padding:1px 6px;border-radius:8px;margin-right:4px;vertical-align:1px;}
 </style>
 </head>
 <body>
@@ -746,6 +770,22 @@ table.ot th,table.ot td{border:1px solid var(--bl);white-space:nowrap;}
     <span style="font-size:10px;color:var(--tm);padding:4px 8px;background:#f0ebff;border-radius:4px;">📌 2배광실 · 3배광실 전용 &nbsp;|&nbsp; 광학설계팀 배광 (월~금)</span>
     <button class="btn-optics-new" onclick="openOpticsModal()">＋ 일정 등록</button>
   </div>
+
+  <!-- 설계 탭 전용 컨트롤 -->
+  <div id="topbar-design" style="display:none;align-items:center;gap:10px;flex:1;">
+    <button class="btn-today" onclick="dzGoToday()">오늘</button>
+    <div class="nav-g">
+      <button class="nav-b" onclick="dzChangeWeek(-1)">◀</button>
+      <div class="nav-s"></div>
+      <span class="wlbl" id="dzWeekLblTop"></span>
+      <div class="nav-s"></div>
+      <button class="nav-b" onclick="dzChangeWeek(1)">▶</button>
+    </div>
+    <div class="tsp"></div>
+    <span style="font-size:10px;color:var(--tm);padding:4px 8px;background:#e3f1f6;border-radius:4px;">📌 전장설계 1실 · 2실 전용 (월~금)</span>
+    <button class="btn-optics-new" style="background:#c2410c;" onclick="dzOpenModal('urgent')">⚡ 긴급 등록</button>
+    <button class="btn-optics-new" style="background:#0f5c7a;" onclick="dzOpenModal('design')">＋ 설계 등록</button>
+  </div>
 </div>
 
 <div class="main">
@@ -759,6 +799,10 @@ table.ot th,table.ot td{border:1px solid var(--bl);white-space:nowrap;}
     <button class="tab-btn" id="tab-optics" onclick="switchTab('optics')">
       <span class="tab-icon">🔬</span>
       <span class="tab-label">광학</span>
+    </button>
+    <button class="tab-btn" id="tab-design" onclick="switchTab('design')">
+      <span class="tab-icon">📐</span>
+      <span class="tab-label">설계</span>
     </button>
     <button class="tab-btn" id="tab-info" onclick="switchTab('info')">
       <span class="tab-icon">📖</span>
@@ -833,6 +877,43 @@ table.ot th,table.ot td{border:1px solid var(--bl);white-space:nowrap;}
         <table class="ot" id="opticsTable">
           <thead id="optics-thead"></thead>
           <tbody id="optics-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 패널 2-2: 설계 일정 -->
+  <div class="panel" id="panel-design">
+    <div class="optics-wrap">
+      <div class="optics-toolbar">
+        <div class="optics-title" style="color:#0f5c7a;">📐 설계 배광 일정</div>
+        <div class="tsp"></div>
+        <button class="btn-trash" onclick="dzOpenTrash()" title="휴지통 (7일 보관)">
+          🗑️ 휴지통<span class="trash-badge" id="dzTrashBadge" style="display:none;">0</span>
+        </button>
+        <button class="btn-hist" onclick="dzOpenHist(null)" title="전체 변경 히스토리">📋 히스토리</button>
+      </div>
+
+      <div class="dz-section-hd urgent">
+        <span class="dz-sec-title">⚡ 긴급 배광 대응</span>
+        <span class="dz-sec-time">(08:00~09:00)</span>
+        <span class="dz-sec-desc">1~6배광실 · 월~금 · 점등/에이밍/고객사 요청 등 확인 목적 사용</span>
+      </div>
+      <div class="optics-table-wrap">
+        <table class="ot dz-tbl dz-urgent">
+          <thead id="dzU-thead"></thead>
+          <tbody id="dzU-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="dz-section-hd">
+        <span class="dz-sec-title">📐 설계 배광 일정</span>
+        <span class="dz-sec-time">(17:00~20:00)</span>
+      </div>
+      <div class="optics-table-wrap">
+        <table class="ot dz-tbl">
+          <thead id="dzD-thead"></thead>
+          <tbody id="dzD-tbody"></tbody>
         </table>
       </div>
     </div>
@@ -1069,6 +1150,93 @@ table.ot th,table.ot td{border:1px solid var(--bl);white-space:nowrap;}
   </div>
 </div>
 
+<!-- 설계 일정 등록/수정 모달 -->
+<div class="ot-overlay" id="dzOverlay">
+  <div class="ot-modal">
+    <div class="ot-modal-hd" id="dzModalHd" style="background:#0f5c7a;"><h3 id="dzModalTitle">설계 일정 등록</h3><button onclick="dzCloseModal()">×</button></div>
+    <div class="modal-bd">
+      <div class="slot-info" id="dzSlotInfo" style="display:none"></div>
+      <div class="frow2">
+        <div class="frow" id="dzRoomRow"><label>배광실</label><select id="dz_room"></select></div>
+        <div class="frow"><label>날짜</label><input id="dz_date" type="date"></div>
+      </div>
+      <div class="frow2">
+        <div class="frow"><label>팀</label><input id="dz_team" type="text" placeholder="예) 전장설계1팀"></div>
+        <div class="frow"><label>차종</label><input id="dz_car" type="text" placeholder="예) 98QC"></div>
+      </div>
+      <div class="frow2">
+        <div class="frow"><label>담당자</label><input id="dz_manager" type="text" placeholder="예) 홍길동"></div>
+        <div class="frow" id="dzQtyRow"><label>수량</label><input id="dz_qty" type="text" placeholder="예) 2대분"></div>
+      </div>
+      <div class="frow" id="dzPurposeRow"><label>목적</label><input id="dz_purpose" type="text" placeholder="예) 배광 스캔"></div>
+      <div class="frow"><label id="dzNoteLbl">비고</label><textarea id="dz_note" placeholder="특이사항 (선택)" style="min-height:36px;"></textarea></div>
+      <div class="frow" id="dzAuthorRow">
+        <label id="dzAuthorLbl">👤 등록자 이름</label>
+        <input id="dz_author" type="text" placeholder="이름을 입력하세요 (예: 홍길동)">
+        <div style="font-size:10px;color:#0f5c7a;margin-top:4px;padding:5px 8px;background:#e3f1f6;border-radius:3px;">
+          💡 모든 등록·수정·삭제 내역은 이름과 함께 히스토리에 기록되어 누구나 확인할 수 있습니다
+        </div>
+      </div>
+      <div class="frow" id="dzOosRow" style="display:none;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="dz_outOfService" style="width:16px;height:16px;" onchange="dzToggleOOS(this.checked)">
+          <span>🔧 미운영 (고장/재정비 등)</span>
+        </label>
+        <div style="font-size:10px;color:var(--tm);margin-top:4px;padding-left:24px;">※ 미운영으로 설정하면 해당 칸은 일정 등록이 불가능합니다</div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-cancel" onclick="dzCloseModal()">취소</button>
+      <button class="btn-submit" id="dzSubmitBtn" style="background:#0f5c7a;" onclick="dzSubmit()">등록</button>
+    </div>
+  </div>
+</div>
+
+<!-- 설계 상세 팝업 -->
+<div class="ot-detail" id="dzDetail" style="border-top-color:#0f5c7a;">
+  <div class="ot-dh">
+    <div style="flex:1;min-width:0;">
+      <div class="ot-dh-title" id="dzd-title"></div>
+      <div class="ot-dh-sub" id="dzd-sub"></div>
+    </div>
+    <div class="dh-actions">
+      <button class="dh-btn" title="닫기" onclick="dzCloseDetail()">✕</button>
+    </div>
+  </div>
+  <div class="db" id="dzd-body"></div>
+  <div class="ot-df" id="dzd-footer"></div>
+</div>
+
+<!-- 설계 휴지통 모달 -->
+<div class="trash-overlay" id="dzTrashOverlay">
+  <div class="trash-modal">
+    <div class="trash-hd" style="background:#0f5c7a;">
+      <h3>🗑️ 설계 일정 휴지통 <span style="font-size:10px;font-weight:400;opacity:.85;">(삭제 후 7일간 복구 가능)</span></h3>
+      <button onclick="dzCloseTrash()">×</button>
+    </div>
+    <div class="trash-bd" id="dzTrashBody"></div>
+    <div class="trash-ft">
+      <span class="trash-info-text">7일이 경과한 항목은 자동으로 영구 삭제됩니다</span>
+      <button class="btn-cancel" onclick="dzCloseTrash()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 설계 히스토리 모달 -->
+<div class="hist-overlay" id="dzHistOverlay">
+  <div class="hist-modal">
+    <div class="hist-hd" style="background:#0f5c7a;">
+      <h3>📋 설계 변경 히스토리 <span id="dzHistLabel" style="font-size:11px;font-weight:400;opacity:.85;"></span></h3>
+      <button onclick="dzCloseHist()">×</button>
+    </div>
+    <div class="hist-bd" id="dzHistBody"></div>
+    <div class="hist-ft">
+      <span style="font-size:10px;color:var(--tm);">모든 등록·수정·삭제 내역이 기록됩니다</span>
+      <button class="btn-cancel" onclick="dzCloseHist()">닫기</button>
+    </div>
+  </div>
+</div>
+
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -1137,6 +1305,8 @@ const ROWS=[
   {ri:6,ampm:'오후',dTime:'15:00~16:00',nTime:'03:00~04:00'},
   {ri:7,ampm:'오후',dTime:'16:00~17:00',nTime:'04:00~05:00'},
 ];
+// 주간 첫 행(08:00~09:00)은 설계 탭 [긴급 배광 대응] 전용으로 잠금 (야간 20:00~21:00은 그대로)
+function isUrgentLocked(shift, ri){ return shift === 'day' && ri === 0; }
 const DAY_TIMES  =['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
 const NIGHT_TIMES=['20:00','21:00','22:00','23:00','24:00','01:00','02:00','03:00','04:00','05:00'];
 const DAYS_KO=['일','월','화','수','목','금','토'];
@@ -1204,6 +1374,7 @@ function verifyPin() {
     const cleanBtn = document.getElementById('opticsCleanBtn');
     if (cleanBtn) cleanBtn.style.display = 'inline-block';
     closePinModal();
+    setTimeout(migrateDay8am, 300);
     render();
     showToast('✅ 관리자 모드 활성화');
   } else {
@@ -1347,19 +1518,24 @@ function setupFirestoreListener() {
   const eventsCol = collection(db, 'events');
   
   unsubscribeSnapshot = onSnapshot(eventsCol, (snapshot) => {
-    if (!isFirestoreReady) {
-      isFirestoreReady = true;
-      return;
-    }
     events = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
       events.push({ id: doc.id, ...data, status: data.status || 'pending' });
     });
+    if (!isFirestoreReady) {
+      // 첫 수신: 별도 getDocs 없이 실시간 동기화가 초기 로드를 담당 (읽기 횟수 절반)
+      isFirestoreReady = true;
+      console.log(`✅ Firestore에서 ${events.length}개 이벤트 로드됨`);
+      updateSyncStatus('connected');
+      showLoading(false);
+    }
     buildTable();
     renderStats();
   }, (error) => {
     console.error('❌ Firestore 리스너 오류:', error);
+    showToast('⚠️ 데이터 로드 실패: ' + error.message);
+    showLoading(false);
   });
 }
 
@@ -1630,6 +1806,14 @@ function buildTable(){
             const hBot=document.createElement('div');hBot.className='ev-resize-handle bottom';hBot.title='드래그로 종료 시간 조절';
             hBot.addEventListener('mousedown',e=>{e.stopPropagation();onResizeStart(e,startingEv.id,'bottom');});
             block.appendChild(hBot);block.addEventListener('click',e=>handleBlockClick(startingEv.id,e));block.addEventListener('mousedown',e=>onBlockDragStart(e,startingEv.id));td.appendChild(block);
+          } else if(isUrgentLocked(shift,rowIdx)){
+            td.classList.add('urgent-locked');
+            let ue=null; try{ ue=dzEntries.find(x=>x.cat==='urgent'&&Number(x.room)===room.id&&x.date===dateStr); }catch(_){}
+            if(ue&&ue.status==='outofservice') td.innerHTML='<div class="ul-tag">⚡ 긴급 · 미운영</div>';
+            else if(ue) td.innerHTML=`<div class="ul-tag">⚡ ${dzEsc(ue.team||'긴급')}</div>${ue.car?`<div class="ul-sub">${dzEsc(ue.car)}</div>`:''}`;
+            else td.innerHTML='<div class="ul-tag ul-empty">⚡ 긴급 대응</div>';
+            td.title='08:00~09:00은 설계 탭 [긴급 배광 대응] 전용입니다';
+            td.addEventListener('click',()=>showToast('⚡ 08:00~09:00은 긴급 배광 전용입니다 — 설계 탭에서 예약하세요'));
           } else {td.addEventListener('mousedown',onMouseDown);td.addEventListener('mouseenter',onMouseEnter);td.addEventListener('mouseup',onMouseUp);}
           tr.appendChild(td);
         });
@@ -1666,6 +1850,7 @@ function onBlockDragMove(e){
   if(targetRoom!==blockDrag.room)return;
   const offset=blockDrag.grabRi-blockDrag.origStartRi;const newStart=targetRi-offset;const newEnd=newStart+blockDrag.span-1;
   if(newStart<0||newEnd>7)return;
+  if(isUrgentLocked(targetShift,newStart))return;
   blockDrag.currentTargetRi=newStart;blockDrag.currentTargetDate=targetDate;blockDrag.currentTargetShift=targetShift;blockDrag.moved=true;
   const conflict=events.filter(e2=>{
     if(e2.id===blockDrag.evId)return false;
@@ -1738,7 +1923,7 @@ function onResizeMove(e){
   if(!blockResize)return;
   document.querySelectorAll('.td-slot.resize-target,.td-slot.resize-blocked,.td-slot.resize-shrink').forEach(c=>c.classList.remove('resize-target','resize-blocked','resize-shrink'));
   let targetRi=getRiFromY(e.clientY);
-  targetRi=Math.max(0,Math.min(7,targetRi));
+  targetRi=Math.max(blockResize.shift==='day'?1:0,Math.min(7,targetRi));
 
   const {edge,origStartRi,origEndRi}=blockResize;
   let newStart, newEnd;
@@ -1874,7 +2059,7 @@ function confirmSelection(){
 function applySelection(){clearSelectionHighlight();if(!selection)return;const{room,date,shift,startRi,endRi}=selection;for(let ri=startRi;ri<=endRi;ri++){document.querySelectorAll(`.td-slot[data-room="${room}"][data-date="${date}"][data-shift="${shift}"][data-ri="${ri}"]`).forEach(c=>c.classList.add('selected'));}}
 function clearSelectionHighlight(){document.querySelectorAll('.td-slot.selected').forEach(c=>c.classList.remove('selected'));}
 function clearSelection(){clearSelectionHighlight();selection=null;}
-function openFromSelection(){if(!selection)return;const{room,date,shift,startRi,endRi}=selection;clearSelection();cursor=null;applyCursor();const{startTime,endTime}=riToTimes(shift,startRi,endRi);openModal({room,date,shift,startTime,endTime});}
+function openFromSelection(){if(!selection)return;let{room,date,shift,startRi,endRi}=selection;if(isUrgentLocked(shift,startRi)){if(endRi<1){showToast('⚡ 08:00~09:00은 긴급 배광 전용입니다 — 설계 탭에서 예약하세요');clearSelection();return;}startRi=1;}clearSelection();cursor=null;applyCursor();const{startTime,endTime}=riToTimes(shift,startRi,endRi);openModal({room,date,shift,startTime,endTime});}
 function applyPreview(){clearPreview();if(!drag)return;for(let ri=drag.startRi;ri<=drag.endRi;ri++){document.querySelectorAll(`.td-slot[data-room="${drag.room}"][data-date="${drag.date}"][data-shift="${drag.shift}"][data-ri="${ri}"]`).forEach(c=>c.classList.add('drag-preview'));}}
 function clearPreview(){document.querySelectorAll('.td-slot.drag-preview').forEach(c=>c.classList.remove('drag-preview'));}
 function clearDrag(){clearPreview();drag=null;}
@@ -1940,6 +2125,9 @@ document.addEventListener('keydown',e=>{
     return;
   }
   if((e.key==='Delete'||e.key==='Backspace')&&!isTyping){
+    // 설계 탭에서 일정이 선택된 경우
+    const designActive = document.getElementById('panel-design').classList.contains('active');
+    if (designActive && dzSelectedId) { e.preventDefault(); dzDeleteSelected(); return; }
     // 광학 탭이 활성화되어 있고 광학 일정이 선택된 경우
     const opticsActive = document.getElementById('panel-optics').classList.contains('active');
     if (opticsActive && opticsSelectedId) {
@@ -1970,6 +2158,7 @@ document.addEventListener('keydown',e=>{
     if(isTyping)return;
     deselectBlock();exitPasteMode();clearSelection();cursor=null;applyCursor();closeDetail();
     closeOtDetail();
+    dzCloseDetail();
   }
 });
 function updateCursorFromTd(td){cursor={room:parseInt(td.dataset.room),date:td.dataset.date,shift:td.dataset.shift,ri:parseInt(td.dataset.ri)};applyCursor();}
@@ -2007,7 +2196,7 @@ function renderStats(){
   // 블락되지 않은 날만 집계 대상 (공휴일/창립기념일 등 블락 시 해당 날짜 차감)
   const availableDates=wd.filter(d=>!dayBlocks[d]);
   const availableDays=availableDates.length;
-  const TOTAL_DAY=8*availableDays,TOTAL_NIGHT=8*availableDays;
+  const TOTAL_DAY=7*availableDays,TOTAL_NIGHT=8*availableDays; // 주간 08:00~09:00은 긴급 배광 전용
   function evHours(ev){const sMap=ev.shift==='day'?DAY_START_TO_RI:NIGHT_START_TO_RI;const eMap=ev.shift==='day'?DAY_END_TO_RI:NIGHT_END_TO_RI;return(eMap[ev.endTime]??0)-(sMap[ev.startTime]??0)+1;}
   const html=ROOMS.filter(r=>visibleRooms.has(r.id)).map(r=>{
     // 블락되지 않은 날짜의 예약만 집계
@@ -2027,7 +2216,7 @@ function renderStats(){
 }
 
 // ── MODAL ──
-function updateTimeOpts(defStart,defEnd){const shift=document.getElementById('f_shift').value;const times=shift==='day'?DAY_TIMES:NIGHT_TIMES;const fs=document.getElementById('f_start');const fe=document.getElementById('f_end');fs.innerHTML=times.slice(0,-1).map(t=>`<option value="${t}">${t}</option>`).join('');fe.innerHTML=times.slice(1).map(t=>`<option value="${t}">${t}</option>`).join('');fs.value=defStart||times[0];fe.value=defEnd||times[times.length-1];}
+function updateTimeOpts(defStart,defEnd){const shift=document.getElementById('f_shift').value;const times=shift==='day'?DAY_TIMES:NIGHT_TIMES;const fs=document.getElementById('f_start');const fe=document.getElementById('f_end');const starts=times.slice(0,-1).filter(t=>!(shift==='day'&&t==='08:00'&&defStart!=='08:00'));fs.innerHTML=starts.map(t=>`<option value="${t}">${t}</option>`).join('');fe.innerHTML=times.slice(1).map(t=>`<option value="${t}">${t}</option>`).join('');fs.value=(defStart&&starts.includes(defStart))?defStart:starts[0];fe.value=defEnd||times[times.length-1];}
 function openModal(pre){
   editingId=null;document.getElementById('modalTitle').textContent='새 예약 등록';
   ['f_dept','f_manager','f_title','f_note'].forEach(id=>document.getElementById(id).value='');
@@ -2096,6 +2285,7 @@ async function submitReservation(){
     return newS<=en&&newE>=s;
   });
   if(conflict.length>0){alert(`⚠️ 시간이 겹치는 예약이 있습니다.\n(${conflict[0].title} ${conflict[0].startTime}~${conflict[0].endTime})`);return;}
+  if(shift==='day'&&startTime==='08:00'&&date>=fmtDate(new Date())){alert('⚠️ 주간 08:00~09:00은 설계 탭 [긴급 배광 대응] 전용입니다.\n주간 예약은 09:00부터 가능합니다.');return;}
 
   saveUndo();
 
@@ -2262,6 +2452,7 @@ function applyPasteReady(){
   const{room,shift}=copiedEvent;const{startRi,endRi}=evToRi(copiedEvent);const span=endRi-startRi+1;
   document.querySelectorAll(`.td-slot[data-room="${room}"][data-shift="${shift}"]`).forEach(td=>{
     const ri=parseInt(td.dataset.ri);const date=td.dataset.date;let canFit=true;
+    if(isUrgentLocked(shift,ri))return;
     for(let r=ri;r<ri+span;r++){
       if(r>7){canFit=false;break;}
       const booked=events.find(e=>{
@@ -2289,6 +2480,7 @@ async function pasteEvent(room,date,shift,startRi){
     return;
   }
 
+  if(isUrgentLocked(shift,startRi)){ showToast('⚡ 08:00~09:00은 긴급 배광 전용입니다'); return; }
   const{startRi:origStart,endRi:origEnd}=evToRi(copiedEvent);
   const span=origEnd-origStart+1;
   let endRi=startRi+span-1;
@@ -2545,21 +2737,14 @@ function switchTab(tab) {
   document.getElementById('tab-' + tab).classList.add('active');
   document.getElementById('panel-' + tab).classList.add('active');
 
-  // topbar 컨트롤 전환
-  const reserveBar = document.getElementById('topbar-reserve');
-  const opticsBar  = document.getElementById('topbar-optics');
-  if (tab === 'optics') {
-    reserveBar.style.display = 'none';
-    opticsBar.style.display  = 'flex';
-    opticsRender();
-  } else if (tab === 'info') {
-    // 시험실 안내 탭은 topbar 컨트롤 모두 숨김 (정적 정보)
-    reserveBar.style.display = 'none';
-    opticsBar.style.display  = 'none';
-  } else {
-    reserveBar.style.display = 'flex';
-    opticsBar.style.display  = 'none';
-  }
+  // topbar 컨트롤 전환 (안내 탭은 모두 숨김)
+  const bars = { reserve: 'topbar-reserve', optics: 'topbar-optics', design: 'topbar-design' };
+  Object.entries(bars).forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = (k === tab) ? 'flex' : 'none';
+  });
+  if (tab === 'optics') opticsRender();
+  if (tab === 'design') dzRender();
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -3525,6 +3710,545 @@ function opticsGoToday() {
   opticsRender();
 }
 
+// ── 기존 주간 08:00 시작 예약 → 09:00 일괄 변경 (관리자 로그인 시 1회 확인) ──
+async function migrateDay8am(){
+  if(!isAdminMode) return;
+  const today=fmtDate(new Date());
+  const targets=events.filter(e=>e.shift==='day'&&e.startTime==='08:00'&&e.date>=today);
+  if(!targets.length) return;
+  const movable=targets.filter(e=>e.endTime!=='09:00');
+  const oneHour=targets.filter(e=>e.endTime==='09:00');
+  let msg=`[주간 08:00~09:00 → 긴급 배광 전용 전환]\n\n오늘(${today}) 이후 08:00에 시작하는 주간 예약이 ${targets.length}건 있습니다.\n\n• 시작시간 08:00 → 09:00 변경: ${movable.length}건`;
+  if(oneHour.length) msg+=`\n• 08:00~09:00 1시간짜리 ${oneHour.length}건은 옮길 수 없어 그대로 둡니다 (직접 확인 필요)`;
+  msg+='\n\n지금 일괄 변경할까요?';
+  if(!confirm(msg)) return;
+  let ok=0, fail=0;
+  for(const ev of movable){
+    try{ ev.startTime='09:00'; await updateEventInFirestore(ev); ok++; }
+    catch(err){ fail++; console.error('08:00→09:00 변경 실패:', ev.id, err); }
+  }
+  buildTable(); renderStats();
+  showToast(`✅ ${ok}건 09:00 시작으로 변경 완료${fail?` (실패 ${fail}건)`:''}`, 4000);
+  if(oneHour.length){
+    const r=id=>(ROOMS.find(x=>x.id===id)||{}).name||id;
+    alert('아래 08:00~09:00 1시간 예약은 그대로 남아 있습니다. 확인 후 이동/삭제해주세요.\n\n'+oneHour.map(e=>`• ${e.date} ${r(e.room)} — ${e.title}`).join('\n'));
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// 📐 설계 탭 (긴급 배광 대응 08:00~09:00 / 설계 배광 일정 17:00~20:00)
+//   Firestore: designEntries / designTrash / designHistory
+// ══════════════════════════════════════════════════════════════
+
+const DZ_COLOR = '#0f5c7a';
+const DZ_CAT = {
+  urgent: { name:'긴급 배광', icon:'⚡', time:'08:00~09:00', rooms:[1,2,3,4,5,6], color:'#c2410c',
+            fields:[['team','팀'],['car','차종'],['manager','담당자'],['note','내용']] },
+  design: { name:'설계 배광', icon:'📐', time:'17:00~20:00', rooms:[0], color:'#0f5c7a',
+            fields:[['team','팀'],['car','차종'],['manager','담당자'],['purpose','목적'],['qty','수량'],['note','비고']] },
+};
+
+let dzMonday = getMonday(new Date());
+let dzEntries = [], dzTrash = [], dzHistory = [];
+let dzEditingId = null, dzSelectedId = null, dzModalCat = 'urgent', dzHistFilter = null;
+
+function dzEsc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function dzRoomName(cat, room){ return cat === 'design' ? '전장설계' : `${room}배광실`; }
+function dzRoomMeta(cat, room){
+  if (cat === 'design') return { color: DZ_COLOR, bg: '#d6eaf1' };
+  return ROOMS.find(r => r.id === Number(room)) || { color:'#555', bg:'#eee' };
+}
+function dzCatBadge(cat){ const c = DZ_CAT[cat] || DZ_CAT.design; return `<span class="dz-cat-badge" style="background:${c.color};">${c.icon} ${c.name}</span>`; }
+function dzIsActive(){ const p = document.getElementById('panel-design'); return p && p.classList.contains('active'); }
+function dzCol(name){ const { db, collection } = window.firestoreDB; return collection(db, name); }
+function dzNorm(d){ const data = d.data(); return { id: d.id, ...data, room: Number(data.room) }; }
+
+// ── Firestore ──
+function dzSetupListeners(){
+  const { onSnapshot } = window.firestoreDB;
+  onSnapshot(dzCol('designEntries'), snap => {
+    dzEntries = []; snap.forEach(d => dzEntries.push(dzNorm(d)));
+    if (dzIsActive()) dzBuildTables();
+    if (document.getElementById('panel-reserve').classList.contains('active')) buildTable();
+  }, err => console.error('설계 데이터 로드 오류 (Firebase Rules 확인):', err));
+  onSnapshot(dzCol('designTrash'), snap => {
+    dzTrash = []; snap.forEach(d => dzTrash.push(dzNorm(d)));
+    dzUpdateTrashBadge();
+    if (document.getElementById('dzTrashOverlay').classList.contains('open')) dzRenderTrash();
+  }, err => console.error('설계 휴지통 로드 오류:', err));
+  onSnapshot(dzCol('designHistory'), snap => {
+    dzHistory = []; snap.forEach(d => dzHistory.push({ id: d.id, ...d.data() }));
+    dzHistory.sort((a, b) => b.ts - a.ts);
+    if (document.getElementById('dzHistOverlay').classList.contains('open')) dzRenderHist();
+  }, err => console.error('설계 히스토리 로드 오류:', err));
+}
+async function dzSaveEntry(entry){
+  const { db, doc, setDoc } = window.firestoreDB;
+  await setDoc(doc(db, 'designEntries', entry.id), sanitizeForFirestore(entry));
+}
+async function dzDeleteDoc(col, id){
+  const { db, doc, deleteDoc } = window.firestoreDB;
+  await deleteDoc(doc(db, col, id));
+}
+async function dzAddHistory(action, entry, author, before, after){
+  try {
+    const { addDoc } = window.firestoreDB;
+    await addDoc(dzCol('designHistory'), sanitizeForFirestore({
+      action, entryId: entry.id, cat: entry.cat, room: Number(entry.room), date: entry.date,
+      author: author || '(미지정)', ts: Date.now(),
+      before: before ? sanitizeForFirestore(before) : null,
+      after:  after  ? sanitizeForFirestore(after)  : null,
+    }));
+  } catch(e) { console.error('설계 히스토리 저장 오류:', e); }
+}
+async function dzPurgeTrash(){
+  for (const t of dzTrash.filter(t => isExpired(t.deletedAt))) {
+    try { await dzDeleteDoc('designTrash', t.id); } catch(e) {}
+  }
+}
+
+// ── 주간 네비게이션 ──
+function dzWeekdays(){
+  return Array.from({ length: 5 }, (_, i) => { const d = new Date(dzMonday); d.setDate(d.getDate() + i); return d; });
+}
+function dzRender(){
+  const lbl = document.getElementById('dzWeekLblTop');
+  if (lbl) lbl.textContent = `${dzMonday.getMonth()+1}월 ${getWeekNum(dzMonday)}주`;
+  dzBuildTables();
+}
+function dzChangeWeek(dir){ dzMonday = new Date(dzMonday); dzMonday.setDate(dzMonday.getDate() + dir * 7); dzRender(); }
+function dzGoToday(){ dzMonday = getMonday(new Date()); dzRender(); }
+
+// ── 테이블 렌더 ──
+function dzBuildTables(){ dzBuildTable('urgent', 'dzU'); dzBuildTable('design', 'dzD'); }
+
+function dzCardHtml(entry){
+  const cfg = DZ_CAT[entry.cat];
+  const author = entry.author ? `<div class="oc-author">👤 ${dzEsc(entry.author)}</div>` : '';
+  const rows = cfg.fields.filter(([k]) => entry[k]).map(([k, lbl]) => {
+    const red = (entry.cat === 'design' && k === 'note') ? ' style="color:#c43e1c;"' : '';
+    return `<div class="oc-row"><span class="oc-lbl">${lbl}</span><span class="oc-val"${red}>${dzEsc(entry[k])}</span></div>`;
+  }).join('');
+  return author + rows;
+}
+
+function dzBuildTable(cat, prefix){
+  const thead = document.getElementById(prefix + '-thead');
+  const tbody = document.getElementById(prefix + '-tbody');
+  if (!thead || !tbody) return;
+  const cfg = DZ_CAT[cat];
+  const days = dzWeekdays();
+  const todayStr = fmtDate(new Date());
+  thead.innerHTML = ''; tbody.innerHTML = '';
+
+  const tr = document.createElement('tr');
+  const th = document.createElement('th');
+  th.className = 'ot-th-corner';
+  th.textContent = cat === 'design' ? '팀구분' : '배광실';
+  tr.appendChild(th);
+  days.forEach(d => {
+    const th2 = document.createElement('th');
+    th2.className = 'ot-th-date' + (fmtDate(d) === todayStr ? ' today-col' : '');
+    th2.innerHTML = `<span style="font-size:13px;font-weight:700;">${d.getMonth()+1}/${d.getDate()}</span> <span style="font-size:12px;font-weight:400;color:var(--tm);">(${DAYS_KO2[d.getDay()]})</span><br><span style="font-size:10px;color:${cfg.color};font-weight:600;">${cfg.time}</span>`;
+    tr.appendChild(th2);
+  });
+  thead.appendChild(tr);
+
+  cfg.rooms.forEach(roomId => {
+    const meta = dzRoomMeta(cat, roomId);
+    const tr2 = document.createElement('tr');
+    const tdRoom = document.createElement('td');
+    tdRoom.className = 'ot-td-room';
+    tdRoom.style.cssText = `background:${meta.bg};color:${meta.color};border-top:2px solid ${meta.color};`;
+    tdRoom.innerHTML = `<span class="dz-room-pill" style="background:${meta.color};">${cat === 'design' ? '전장<br>설계' : dzRoomName(cat, roomId)}</span>`;
+    tr2.appendChild(tdRoom);
+
+    days.forEach(d => {
+      const dateStr = fmtDate(d);
+      const entry = dzEntries.find(e => e.cat === cat && Number(e.room) === roomId && e.date === dateStr);
+      const td = document.createElement('td');
+      td.className = 'ot-td-cell' + (dateStr === todayStr ? ' today-col' : '');
+      if (entry) {
+        const card = document.createElement('div');
+        if (entry.status === 'outofservice') {
+          td.classList.add('outofservice-cell');
+          card.className = 'ot-card outofservice-card';
+          card.innerHTML = `<div class="oos-icon">🔧</div><div class="oos-label">미 운 영</div>${entry.note ? `<div class="oos-note">${dzEsc(entry.note)}</div>` : ''}`;
+        } else {
+          card.className = 'ot-card';
+          card.style.borderLeft = `3px solid ${meta.color}`;
+          card.innerHTML = dzCardHtml(entry);
+        }
+        if (entry.id === dzSelectedId) card.classList.add('dz-selected');
+        card.addEventListener('click', ev => { ev.stopPropagation(); dzShowDetail(entry.id, ev); });
+        td.appendChild(card);
+      } else {
+        td.addEventListener('click', () => dzOpenModal(cat, { room: roomId, date: dateStr }));
+        const empty = document.createElement('div');
+        empty.className = 'ot-card empty-card';
+        empty.textContent = cat === 'urgent' ? '+ 긴급 등록' : '+ 일정 등록';
+        td.appendChild(empty);
+      }
+      tr2.appendChild(td);
+    });
+    tbody.appendChild(tr2);
+  });
+}
+
+// ── 등록/수정 모달 ──
+function dzToggleOOS(on){
+  ['dz_team','dz_car','dz_manager','dz_qty','dz_purpose'].forEach(id => {
+    const el = document.getElementById(id);
+    el.disabled = on; el.style.background = on ? '#f5f5f5' : '';
+    if (on) el.value = '';
+  });
+}
+
+function dzPrepareModal(cat){
+  dzModalCat = cat;
+  const isU = cat === 'urgent';
+  const cfg = DZ_CAT[cat];
+  document.getElementById('dzModalHd').style.background = cfg.color;
+  document.getElementById('dzSubmitBtn').style.background = cfg.color;
+  document.getElementById('dzRoomRow').style.display = isU ? '' : 'none';
+  document.getElementById('dzQtyRow').style.display = isU ? 'none' : '';
+  document.getElementById('dzPurposeRow').style.display = isU ? 'none' : '';
+  document.getElementById('dzNoteLbl').textContent = isU ? '내용' : '비고';
+  document.getElementById('dz_note').placeholder = isU ? '예) 고객사 요청 간이 검증' : '특이사항 (선택)';
+  document.getElementById('dz_room').innerHTML = cfg.rooms.map(r => `<option value="${r}">${dzRoomName(cat, r)}</option>`).join('');
+  document.getElementById('dzOosRow').style.display = isAdminMode ? 'block' : 'none';
+  ['dz_team','dz_car','dz_manager','dz_qty','dz_purpose','dz_note'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('dz_outOfService').checked = false;
+  dzToggleOOS(false);
+  const authorRow = document.getElementById('dzAuthorRow');
+  authorRow.style.display = isAdminMode ? 'none' : 'block';
+  document.getElementById('dz_author').value = isAdminMode ? '' : loadAuthorName();
+}
+
+function dzOpenModal(cat, pre){
+  dzEditingId = null;
+  dzPrepareModal(cat);
+  const cfg = DZ_CAT[cat];
+  document.getElementById('dzModalTitle').textContent = `${cfg.icon} ${cfg.name} 등록 (${cfg.time})`;
+  document.getElementById('dzAuthorLbl').textContent = '👤 등록자 이름';
+  document.getElementById('dz_room').value = pre?.room ?? cfg.rooms[0];
+  document.getElementById('dz_date').value = pre?.date || fmtDate(new Date());
+  const si = document.getElementById('dzSlotInfo');
+  if (pre) { si.style.display = 'block'; si.textContent = `📌 ${dzRoomName(cat, pre.room)} / ${pre.date} / ${cfg.time}`; }
+  else si.style.display = 'none';
+  document.getElementById('dzOverlay').classList.add('open');
+}
+
+function dzEdit(id){
+  const entry = dzEntries.find(e => e.id === id);
+  if (!entry) return;
+  if (entry.status === 'outofservice' && !isAdminMode) { showToast('⚠️ 미운영 일정은 관리자만 수정할 수 있습니다'); return; }
+  dzCloseDetail();
+  dzEditingId = id;
+  dzPrepareModal(entry.cat);
+  const cfg = DZ_CAT[entry.cat];
+  document.getElementById('dzModalTitle').textContent = `${cfg.icon} ${cfg.name} 수정 (${cfg.time})`;
+  document.getElementById('dzAuthorLbl').textContent = '👤 수정자 이름';
+  document.getElementById('dz_room').value = entry.room;
+  document.getElementById('dz_date').value = entry.date;
+  ['team','car','manager','qty','purpose','note'].forEach(k => document.getElementById('dz_' + k).value = entry[k] || '');
+  const isOOS = entry.status === 'outofservice';
+  document.getElementById('dz_outOfService').checked = isOOS;
+  dzToggleOOS(isOOS);
+  document.getElementById('dzSlotInfo').style.display = 'none';
+  document.getElementById('dzOverlay').classList.add('open');
+}
+
+function dzCloseModal(){ document.getElementById('dzOverlay').classList.remove('open'); dzEditingId = null; }
+
+async function dzSubmit(){
+  const cat = dzModalCat;
+  const isU = cat === 'urgent';
+  const room = isU ? parseInt(document.getElementById('dz_room').value) : 0;
+  const date = document.getElementById('dz_date').value;
+  const v = id => document.getElementById(id).value.trim();
+  const team = v('dz_team'), car = v('dz_car'), manager = v('dz_manager');
+  const purpose = isU ? '' : v('dz_purpose'), qty = isU ? '' : v('dz_qty'), note = v('dz_note');
+  const isOOS = document.getElementById('dz_outOfService').checked;
+  const actor = isAdminMode ? '관리자' : v('dz_author');
+
+  if (!date) { alert('날짜를 선택하세요.'); return; }
+  if (isOOS && !isAdminMode) { alert('⚠️ 미운영 설정은 관리자만 가능합니다.'); return; }
+  if (!isOOS && (!team || !manager)) { alert('⚠️ 팀과 담당자를 입력하세요.'); return; }
+  if (!isAdminMode && !actor) { alert('⚠️ 이름을 입력하세요.'); document.getElementById('dz_author').focus(); return; }
+
+  const dup = dzEntries.find(e => e.cat === cat && Number(e.room) === room && e.date === date && e.id !== dzEditingId);
+  if (dup) {
+    alert(`해당 칸에 이미 등록된 일정이 있습니다.\n\n• ${dzRoomName(cat, room)} / ${date}\n• 구분: ${dup.status === 'outofservice' ? '미운영' : (dup.team || '(팀 미지정)')}\n• 등록자: ${dup.author || '(미지정)'}`);
+    return;
+  }
+  if (!isAdminMode) saveAuthorName(actor);
+
+  const orig = dzEditingId ? dzEntries.find(e => e.id === dzEditingId) : null;
+  const entry = {
+    id: dzEditingId || generateId(), cat, room, date,
+    team: isOOS ? '' : team, car: isOOS ? '' : car, manager: isOOS ? '' : manager,
+    purpose: isOOS ? '' : purpose, qty: isOOS ? '' : qty, note,
+    status: isOOS ? 'outofservice' : 'active',
+    author: isOOS ? '관리자' : (orig ? (orig.author || actor) : actor),
+  };
+
+  try {
+    await dzSaveEntry(entry);
+  } catch(err) {
+    console.error('설계 일정 저장 실패:', err);
+    alert(`저장에 실패했습니다.\n\n${err.message || err}\n\n※ Firebase Rules에 designEntries 권한이 추가되어 있는지 확인하세요.`);
+    return;
+  }
+  const idx = dzEntries.findIndex(e => e.id === entry.id);
+  if (idx >= 0) dzEntries[idx] = entry; else dzEntries.push(entry);
+  dzAddHistory(orig ? 'edit' : 'create', entry, actor, orig, entry);
+  showToast(isOOS ? '🔧 미운영 설정됨' : (orig ? '✅ 일정 수정됨' : `✅ ${DZ_CAT[cat].name} 일정 등록됨`));
+  dzCloseModal();
+  dzBuildTables();
+}
+
+// ── 상세 팝업 ──
+function dzShowDetail(id, e){
+  document.querySelectorAll('.ot-card.dz-selected').forEach(el => el.classList.remove('dz-selected'));
+  const entry = dzEntries.find(x => x.id === id);
+  if (!entry) return;
+  dzSelectedId = id;
+  if (e && e.currentTarget) e.currentTarget.classList.add('dz-selected');
+
+  const cfg = DZ_CAT[entry.cat];
+  const isOOS = entry.status === 'outofservice';
+  const dObj = new Date(entry.date);
+  document.getElementById('dzDetail').style.borderTopColor = isOOS ? '#999' : cfg.color;
+  document.getElementById('dzd-title').textContent = isOOS ? '🔧 미운영' : (entry.team || dzRoomName(entry.cat, entry.room));
+  document.getElementById('dzd-sub').textContent = `${cfg.icon} ${cfg.name} · ${dzRoomName(entry.cat, entry.room)} · ${entry.date.slice(5).replace('-','/')} (${DAYS_KO2[dObj.getDay()]}) ${cfg.time}`;
+
+  let body = '';
+  if (isOOS) {
+    body += `<div class="dr"><span class="di">📊</span><div class="dr-text"><div class="status-badge outofservice">🔧 미운영</div></div></div>`;
+    if (entry.note) body += `<div class="dr"><span class="di">📝</span><div class="dr-text" style="color:#c43e1c;">${dzEsc(entry.note)}</div></div>`;
+  } else {
+    if (entry.author) body += `<div class="dr"><span class="di">🔒</span><div class="dr-text"><b>등록자: ${dzEsc(entry.author)}</b></div></div>`;
+    const icons = { team:'👥', car:'🚗', manager:'👤', purpose:'🎯', qty:'📦', note:'📝' };
+    cfg.fields.forEach(([k, lbl]) => {
+      if (entry[k]) body += `<div class="dr"><span class="di">${icons[k]}</span><div class="dr-text">${lbl}: ${dzEsc(entry[k])}</div></div>`;
+    });
+    body += `<div class="dr"><span class="di" style="font-size:10px;">⌨️</span><div class="dr-text" style="font-size:10px;color:var(--tm);">Delete 키로도 삭제 가능</div></div>`;
+  }
+  document.getElementById('dzd-body').innerHTML = body;
+
+  const footer = document.getElementById('dzd-footer');
+  footer.innerHTML = '';
+  const mk = (label, cls, fn) => {
+    const b = document.createElement('button');
+    b.className = cls; b.textContent = label;
+    b.addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); fn(); });
+    footer.appendChild(b);
+  };
+  mk('📋 히스토리', 'btn-hist', () => dzOpenHist(id));
+  if (isAdminMode) {
+    mk('수정', 'btn-edit', () => dzEdit(id));
+    mk('삭제', 'btn-del', () => dzAdminDelete(id));
+  } else if (isOOS) {
+    const n = document.createElement('div');
+    n.style.cssText = 'font-size:10px;color:var(--tm);padding-top:2px;';
+    n.textContent = '💡 미운영은 관리자만 수정/삭제';
+    footer.appendChild(n);
+  } else {
+    mk('수정', 'btn-edit', () => dzEdit(id));
+    mk('삭제', 'btn-del', () => dzRequestDelete(id));
+  }
+
+  const popup = document.getElementById('dzDetail');
+  popup.classList.add('open');
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let x = e.clientX + 16, y = e.clientY - 8;
+  if (x + 280 > vw) x = e.clientX - 285;
+  if (y + 300 > vh) y = vh - 310;
+  if (y < 8) y = 8;
+  popup.style.left = x + 'px'; popup.style.top = y + 'px';
+}
+
+function dzCloseDetail(){
+  const p = document.getElementById('dzDetail');
+  if (p) p.classList.remove('open');
+  document.querySelectorAll('.ot-card.dz-selected').forEach(el => el.classList.remove('dz-selected'));
+  dzSelectedId = null;
+}
+
+document.addEventListener('click', e => {
+  const p = document.getElementById('dzDetail');
+  if (!p || !p.classList.contains('open')) return;
+  if (e.target.closest('.ot-card') || p.contains(e.target)) return;
+  dzCloseDetail();
+});
+
+// ── 삭제 ──
+function dzRequestDelete(id){
+  const entry = dzEntries.find(e => e.id === id);
+  if (!entry) { showToast('⚠️ 삭제할 일정을 찾을 수 없습니다'); return; }
+  dzCloseDetail();
+  _delConfirmCallback = async (name) => { saveAuthorName(name); await dzSoftDelete(id, name); };
+  document.getElementById('delConfirmInfo').innerHTML =
+    `${dzCatBadge(entry.cat)}<b>${dzRoomName(entry.cat, entry.room)}</b> · ${entry.date}<br>` +
+    `등록자: <b>${dzEsc(entry.author || '(미지정)')}</b>` +
+    (entry.team ? ` &nbsp;|&nbsp; 팀: <b>${dzEsc(entry.team)}</b>` : '') +
+    `<br><span style="color:#c43e1c;font-size:10px;">⚠️ 삭제 후 휴지통에 7일간 보관됩니다</span>`;
+  const nameInput = document.getElementById('delConfirmName');
+  nameInput.value = loadAuthorName();
+  nameInput.style.borderColor = '';
+  document.getElementById('delConfirmOverlay').classList.add('open');
+  setTimeout(() => nameInput.focus(), 100);
+}
+
+async function dzSoftDelete(id, deletedBy){
+  const entry = dzEntries.find(e => e.id === id);
+  if (!entry) return;
+  try {
+    const { db, doc, setDoc } = window.firestoreDB;
+    await setDoc(doc(db, 'designTrash', entry.id), sanitizeForFirestore({ ...entry, deletedAt: Date.now(), deletedBy: deletedBy || '익명' }));
+    await dzDeleteDoc('designEntries', entry.id);
+    dzEntries = dzEntries.filter(e => e.id !== id);
+    dzAddHistory('delete', entry, deletedBy, entry, null);
+    showToast('🗑️ 휴지통으로 이동 (7일간 복구 가능)');
+  } catch(err) {
+    console.error('설계 일정 삭제 실패:', err);
+    alert(`삭제에 실패했습니다.\n\n${err.message || err}\n\n※ Firebase Rules에 designTrash 권한이 추가되어 있는지 확인하세요.`);
+  } finally {
+    dzCloseDetail(); dzBuildTables();
+  }
+}
+
+async function dzAdminDelete(id){
+  if (!isAdminMode) return;
+  const entry = dzEntries.find(e => e.id === id);
+  if (!entry) return;
+  if (!confirm(`${dzRoomName(entry.cat, entry.room)} ${entry.date} 일정을 영구 삭제하시겠습니까?\n[관리자 권한] 휴지통을 거치지 않습니다.`)) return;
+  try {
+    await dzDeleteDoc('designEntries', id);
+    dzEntries = dzEntries.filter(e => e.id !== id);
+    dzAddHistory('delete', entry, '관리자', entry, null);
+    showToast('🗑️ 영구 삭제됨');
+  } catch(err) {
+    alert(`영구 삭제에 실패했습니다.\n\n${err.message || err}`);
+  } finally {
+    dzCloseDetail(); dzBuildTables();
+  }
+}
+
+function dzDeleteSelected(){
+  const entry = dzEntries.find(e => e.id === dzSelectedId);
+  if (!entry) return;
+  if (isAdminMode) dzAdminDelete(entry.id);
+  else if (entry.status === 'outofservice') showToast('⚠️ 미운영 일정은 관리자만 삭제할 수 있습니다');
+  else dzRequestDelete(entry.id);
+}
+
+// ── 휴지통 ──
+function dzUpdateTrashBadge(){
+  const badge = document.getElementById('dzTrashBadge');
+  if (!badge) return;
+  const n = dzTrash.filter(t => !isExpired(t.deletedAt)).length;
+  badge.style.display = n > 0 ? 'flex' : 'none';
+  badge.textContent = n;
+}
+function dzOpenTrash(){ document.getElementById('dzTrashOverlay').classList.add('open'); dzRenderTrash(); }
+function dzCloseTrash(){ document.getElementById('dzTrashOverlay').classList.remove('open'); }
+function dzRenderTrash(){
+  const body = document.getElementById('dzTrashBody');
+  const list = dzTrash.filter(t => !isExpired(t.deletedAt)).sort((a, b) => b.deletedAt - a.deletedAt);
+  if (list.length === 0) {
+    body.innerHTML = `<div class="trash-empty">🗑️ 휴지통이 비어 있습니다<br><span style="font-size:10px;">삭제된 일정은 7일간 보관됩니다</span></div>`;
+    return;
+  }
+  body.innerHTML = `<div class="trash-list">${list.map(t => {
+    const remain = daysLeft(t.deletedAt);
+    const rc = remain <= 1 ? '#c43e1c' : remain <= 3 ? '#d97706' : '#666';
+    return `<div class="trash-item">
+      <div class="trash-info">
+        <div class="trash-info-main">${dzCatBadge(t.cat)}${dzEsc(t.team || '(팀 미지정)')} <span style="font-size:10px;color:#888;">· ${dzRoomName(t.cat, t.room)}</span></div>
+        <div class="trash-info-sub">
+          📅 <b>${t.date}</b> &nbsp;|&nbsp; 👤 등록자: <b>${dzEsc(t.author || '미지정')}</b>
+          ${t.car ? `&nbsp;|&nbsp; 🚗 ${dzEsc(t.car)}` : ''}${t.manager ? `&nbsp;|&nbsp; 담당: ${dzEsc(t.manager)}` : ''}<br>
+          🗑️ 삭제: <b>${fmtTrashDate(t.deletedAt)}</b> (by ${dzEsc(t.deletedBy || '익명')})
+          &nbsp;|&nbsp; <span style="color:${rc};font-weight:600;">⏱ ${remain}일 후 영구 삭제</span>
+        </div>
+      </div>
+      <div class="trash-actions">
+        ${isAdminMode ? `<button class="btn-restore" onclick="dzRestore('${t.id}')">복구</button><button class="btn-permdel" onclick="dzPermDelete('${t.id}')">영구삭제</button>`
+                      : `<span style="font-size:10px;color:var(--tm);padding:6px 4px;">관리자만 복구/삭제 가능</span>`}
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+async function dzRestore(id){
+  if (!isAdminMode) return;
+  const t = dzTrash.find(x => x.id === id);
+  if (!t) return;
+  if (dzEntries.find(e => e.cat === t.cat && Number(e.room) === Number(t.room) && e.date === t.date)) {
+    alert(`복구할 수 없습니다.\n\n${dzRoomName(t.cat, t.room)} ${t.date}에 이미 다른 일정이 있습니다.`);
+    return;
+  }
+  const { deletedAt, deletedBy, ...clean } = t;
+  try {
+    await dzSaveEntry(clean);
+    await dzDeleteDoc('designTrash', id);
+    dzAddHistory('restore', clean, '관리자', null, clean);
+    showToast('✅ 복구됨');
+  } catch(err) { alert(`복구 실패: ${err.message || err}`); }
+}
+async function dzPermDelete(id){
+  if (!isAdminMode) return;
+  if (!confirm('이 항목을 영구 삭제하시겠습니까?\n\n복구할 수 없습니다.')) return;
+  try { await dzDeleteDoc('designTrash', id); showToast('🗑️ 영구 삭제됨'); }
+  catch(err) { alert(`영구 삭제 실패: ${err.message || err}`); }
+}
+
+// ── 히스토리 ──
+function dzOpenHist(entryId){
+  dzHistFilter = entryId || null;
+  const label = document.getElementById('dzHistLabel');
+  if (entryId) {
+    const e = dzEntries.find(x => x.id === entryId) || dzTrash.find(x => x.id === entryId);
+    label.textContent = e ? `— ${dzRoomName(e.cat, e.room)} ${e.date}` : '';
+  } else label.textContent = '— 전체';
+  document.getElementById('dzHistOverlay').classList.add('open');
+  dzRenderHist();
+}
+function dzCloseHist(){ document.getElementById('dzHistOverlay').classList.remove('open'); }
+function dzRenderHist(){
+  const body = document.getElementById('dzHistBody');
+  const list = dzHistFilter ? dzHistory.filter(h => h.entryId === dzHistFilter) : dzHistory;
+  if (list.length === 0) { body.innerHTML = `<div class="hist-empty">📋 기록된 히스토리가 없습니다</div>`; return; }
+  const META = {
+    create:  { icon:'✅', label:'등록', cls:'create' },
+    edit:    { icon:'✏️', label:'수정', cls:'edit' },
+    delete:  { icon:'🗑️', label:'삭제', cls:'delete' },
+    restore: { icon:'♻️', label:'복구', cls:'restore' },
+  };
+  body.innerHTML = `<div class="hist-list">${list.map(h => {
+    const m = META[h.action] || { icon:'❓', label:h.action, cls:'edit' };
+    const cfg = DZ_CAT[h.cat] || DZ_CAT.design;
+    let extra = '';
+    if (h.action === 'edit' && h.before && h.after) {
+      const LBL = Object.fromEntries([...cfg.fields, ['date','날짜'], ['room','배광실'], ['status','상태']]);
+      const ch = Object.keys(LBL).filter(k => String(h.before[k] ?? '') !== String(h.after[k] ?? ''));
+      if (ch.length) extra = `<div class="hist-diff">${ch.map(k =>
+        `<div>📌 ${LBL[k]}: <span class="diff-old">${dzEsc(h.before[k] || '(없음)')}</span> → <span class="diff-new">${dzEsc(h.after[k] || '(없음)')}</span></div>`).join('')}</div>`;
+    } else if (h.action === 'delete' && h.before) {
+      extra = `<div class="hist-diff">삭제된 일정: ${dzEsc(h.before.team || '(팀 미지정)')} / ${dzEsc(h.before.manager || '')} ${dzEsc(h.before.car || '')}</div>`;
+    }
+    return `<div class="hist-item">
+      <div class="hist-icon">${m.icon}</div>
+      <div class="hist-info">
+        <div class="hist-action ${m.cls}">${dzCatBadge(h.cat)}${m.label}</div>
+        <div class="hist-meta"><b>${dzRoomName(h.cat, h.room)}</b> · ${h.date} &nbsp;|&nbsp; 작업자: <b>${dzEsc(h.author)}</b> &nbsp;|&nbsp; ${fmtHistDate(h.ts)}</div>
+        ${extra}
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
 // ══════════════════════════════════════════════════════════════
 // 🚀 앱 초기화
 // ══════════════════════════════════════════════════════════════
@@ -3543,17 +4267,17 @@ window.addEventListener('load', async () => {
     return;
   }
 
-  await loadEventsFromFirestore();
-  await loadOpticsFromFirestore();
-  await loadTrashFromFirestore();
-  await loadHistoryFromFirestore();
-  await loadDayBlocksFromFirestore();
+  // 초기 데이터는 실시간 리스너의 첫 수신으로 불러옴 (이전: getDocs + 리스너로 같은 데이터를 2번 읽음)
+  showLoading(true);
+  updateSyncStatus('syncing');
   setupFirestoreListener();
   setupOpticsListener();
   setupTrashListener();
   setupHistoryListener();
   setupDayBlocksListener();
+  dzSetupListeners();
   render();
+  dzRender();
 
   // 모달 외부 클릭으로 닫기
   document.getElementById('trashOverlay').addEventListener('click', e => {
@@ -3577,9 +4301,20 @@ window.addEventListener('load', async () => {
     if (e.key === 'Escape') closeBlockModal();
   });
 
+  ['dzOverlay','dzTrashOverlay','dzHistOverlay'].forEach(id => {
+    document.getElementById(id).addEventListener('click', e => {
+      if (e.target.id !== id) return;
+      if (id === 'dzOverlay') dzCloseModal();
+      else if (id === 'dzTrashOverlay') dzCloseTrash();
+      else dzCloseHist();
+    });
+  });
+  setTimeout(async () => { await purgeExpiredTrash(); updateTrashBadge(); await dzPurgeTrash(); }, 5000);
+
   // 매 시간마다 만료된 휴지통 항목 자동 정리
   setInterval(async () => {
     await purgeExpiredTrash();
+    await dzPurgeTrash();
     updateTrashBadge();
   }, 60 * 60 * 1000);
 
